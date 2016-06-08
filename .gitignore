@@ -77,3 +77,14 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
+
+
+
+
+
+# built folders
+ignisilva/bin/
+ignisilva/obj/
+.vs/
+
+
