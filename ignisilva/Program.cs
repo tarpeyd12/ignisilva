@@ -17,7 +17,7 @@ namespace ignisilva
             Bitmap image = new Bitmap( Image.FromFile( "../../../images/flower.jpg" ) );
 
             Bitmap gaussian = image;
-            for( int i = 0; i < 1; ++i )
+            for( int i = 0; i < 0; ++i )
             {
                 gaussian = ImageProcessing.ImageKernal( gaussian, ImageProcessing.GaussianBlurKernal );
             }

@@ -66,11 +66,10 @@ namespace ignisilva
                         }
                     }
 
-                    value *= 255.0f;
-                    if( value > 255.0f ) value = 255.0f;
-                    if( value < 0.0f ) value = 0.0f;
+                    value *= Clamp( value, 0.0f, 1.0f );
 
-                    Color outputColor = Color.FromArgb( (byte)value, (byte)value, (byte)value );
+                    Color inputColor = Color.White;// input.GetPixel( x, y );
+                    Color outputColor = Color.FromArgb( (byte)(inputColor.R*value), (byte)(inputColor.G*value), (byte)(inputColor.B*value) );
                     output.SetPixel( x, y, outputColor );
                 }
             }
