@@ -85,6 +85,7 @@ $RECYCLE.BIN/
 # built folders
 ignisilva/bin/
 ignisilva/obj/
+images/out/
 .vs/
 
 
