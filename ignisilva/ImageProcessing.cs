@@ -117,10 +117,41 @@ namespace ignisilva
             }
         }
 
+        public static float[,] SobelYKernal
+        {
+            get
+            {
+                return new float[,]{
+                {1,2,1},
+                {0,0,0},
+                {-1,-2,-1}};
+            }
+        }
+
+        public static float[,] SobelNXKernal
+        {
+            get
+            {
+                return new float[,]{
+                {-1,0,1},
+                {-2,0,2},
+                {-1,0,1}};
+            }
+        }
+
+        public static float[,] SobelNYKernal
+        {
+            get
+            {
+                return new float[,]{
+                {-1,-2,-1},
+                {0,0,0},
+                {1,2,1}};
+            }
+        }
+
         public static Bitmap ImageKernal( Bitmap input, float[,] matrix, bool alpha = false, bool printPercentage = false )
         {
-
-
             // lock input buffer for read only and copy to buffer
             Rectangle rect = new Rectangle( 0, 0, input.Width, input.Height );
             BitmapData inputDataRegion = input.LockBits( rect, ImageLockMode.ReadOnly, input.PixelFormat );
@@ -133,10 +164,10 @@ namespace ignisilva
             
             for( Int32 y = 0; y < input.Size.Height; ++y )
             {
-                ProcessScanline( y, inputBuffer, outputBuffer, pixelDepth, input.Size, matrix, alpha, printPercentage );
+                ImgaeKernal_ProcessScanline( y, inputBuffer, outputBuffer, pixelDepth, input.Size, matrix, alpha, printPercentage );
             }
 
-            //Parallel.For( 0, input.Size.Height, y => { ProcessScanline( y, inputBuffer, outputBuffer, pixelDepth, input.Size, matrix, alpha, printPercentage ); } );
+            //Parallel.For( 0, input.Size.Height, y => { ImgaeKernal_ProcessScanline( y, inputBuffer, outputBuffer, pixelDepth, input.Size, matrix, alpha, printPercentage ); } );
             
             Bitmap output = new Bitmap( input.Size.Width, input.Size.Height, input.PixelFormat );
 
@@ -157,7 +188,7 @@ namespace ignisilva
         }
 
 
-        private static void ProcessScanline( Int32 y, byte[] inputBuffer, byte[] outputBuffer, Int32 pixelDepth, Size imageSize, float[,] matrix, bool alpha, bool printPercentage )
+        private static void ImgaeKernal_ProcessScanline( Int32 y, byte[] inputBuffer, byte[] outputBuffer, Int32 pixelDepth, Size imageSize, float[,] matrix, bool alpha, bool printPercentage )
         {
             Size halfMatrixSize = new Size( matrix.GetLength( 0 ) / 2, matrix.GetLength( 1 ) / 2 );
 
@@ -205,9 +236,111 @@ namespace ignisilva
             return;
         }
 
+
+        public static Bitmap ReduceImageColors( Bitmap input, Int32 numDesiredColors = 256, bool alpha = false, bool printPercentage = false )
+        {
+            // lock input buffer for read only and copy to buffer
+            Rectangle rect = new Rectangle( 0, 0, input.Width, input.Height );
+            BitmapData inputDataRegion = input.LockBits( rect, ImageLockMode.ReadOnly, input.PixelFormat );
+            Int32 pixelDepth = Bitmap.GetPixelFormatSize( inputDataRegion.PixelFormat ) / 8; //bytes per pixel
+            byte[] inputBuffer = new byte[inputDataRegion.Width * inputDataRegion.Height * pixelDepth];
+            //copy pixels to buffer
+            Marshal.Copy( inputDataRegion.Scan0, inputBuffer, 0, inputBuffer.Length );
+
+            byte[] outputBuffer = new byte[inputBuffer.Length];
+
+            // do the processing
+            {
+
+                Dictionary< Int32, Int32 > histogramDictionary = new Dictionary< Int32, Int32 >(); 
+
+                // get the histogram data
+                for( Int32 y = 0; y < input.Size.Height; ++y )
+                {
+                    ReduceImageColors_ProcessScanline_GenerateHistogram( y, inputBuffer, outputBuffer, pixelDepth, input.Size, histogramDictionary, alpha, printPercentage );
+                }
+                
+
+            }
+
+            Bitmap output = new Bitmap( input.Size.Width, input.Size.Height, input.PixelFormat );
+
+            BitmapData outputDataRegion = output.LockBits( rect, ImageLockMode.WriteOnly, input.PixelFormat );
+
+            //Copy the buffer back to image
+            Marshal.Copy( outputBuffer, 0, outputDataRegion.Scan0, outputBuffer.Length );
+
+            input.UnlockBits( inputDataRegion );
+            output.UnlockBits( outputDataRegion );
+
+            if( printPercentage )
+            {
+                Console.Write( "\rDone.                                         \n" );
+            }
+
+            return output;
+        }
+
+        private static void ReduceImageColors_ProcessScanline_GenerateHistogram( Int32 y, byte[] inputBuffer, byte[] outputBuffer, Int32 pixelDepth, Size imageSize, Dictionary<Int32, Int32> histogram, bool alpha, bool printPercentage )
+        {
+
+            for( Int32 x = 0; x < imageSize.Width; ++x )
+            {
+                Int32 pixelIndex = GetPixelIndex( x, y, imageSize.Width, pixelDepth );
+
+                byte[] value = new byte[pixelDepth];
+                for( Int32 color = 0; color < pixelDepth; ++color ) { value[color] = inputBuffer[pixelIndex + color]; }
+
+                if( !alpha && pixelDepth >= 4 )
+                {
+                    value[3] = 255;
+                }
+
+                Int32 colorIndex = GetColorIndex( value );
+
+                if( histogram.Keys.Contains( colorIndex ) )
+                {
+                    histogram[colorIndex]++;
+                }
+                else
+                {
+                    histogram.Add( colorIndex, 1 );
+                }
+                
+                /*for( Int32 color = 0; color < pixelDepth; ++color )
+                {
+                    outputBuffer[pixelIndex + color] = (byte)Clamp( value[color], 0, 255 );
+                }*/
+
+                int _c;
+                if( printPercentage && ( _c = y * imageSize.Width + x ) % 1200 == 0 )
+                {
+                    Console.Write( "{0:F2}%\r", ( (decimal)_c / (decimal)( imageSize.Width * imageSize.Height ) * 100.0m ) );
+                }
+            }
+            return;
+        }
+
         private static Int32 GetPixelIndex( Int32 x, Int32 y, Int32 width, Int32 depth )
         {
             return ( ( y * width ) + x ) * depth;
+        }
+
+        private static float ColorValueDistance<T>( byte[] a, byte[] b )
+        {
+            float sum = 0.0f;
+
+            for( Int32 i = 0; i < a.Length && i < b.Length; ++i )
+            {
+                float dif = (int)a[i] - (int)b[i];
+                sum += dif * dif;
+            }
+            return (float)Math.Sqrt(sum);
+        }
+
+        public static Int32 GetColorIndex( byte[] color )
+        {
+            return BitConverter.ToInt32( color, 0 );
         }
         
     }
