@@ -252,15 +252,34 @@ namespace ignisilva
             // do the processing
             {
 
-                Dictionary< Int32, Int32 > histogramDictionary = new Dictionary< Int32, Int32 >(); 
+                Dictionary<Int32, Int32> histogramDictionary = new Dictionary<Int32, Int32>();
+                Dictionary<Int32, byte[]> colorDictionary = new Dictionary<Int32, byte[]>();
 
                 // get the histogram data
                 for( Int32 y = 0; y < input.Size.Height; ++y )
                 {
-                    ReduceImageColors_ProcessScanline_GenerateHistogram( y, inputBuffer, outputBuffer, pixelDepth, input.Size, histogramDictionary, alpha, printPercentage );
+                    ReduceImageColors_ProcessScanline_GenerateHistogram( y, inputBuffer, outputBuffer, pixelDepth, input.Size, histogramDictionary, colorDictionary, alpha, printPercentage );
+                }
+
+                // TODO: fix color selection
+                // here we select the colors to be used in the output
+                List<KeyValuePair<Int32, Int32>> histogram = histogramDictionary.ToList();
+
+                histogram.Sort( delegate ( KeyValuePair<Int32, Int32> t1, KeyValuePair<Int32, Int32> t2 ) { return t1.Value - t2.Value; } );
+
+                histogram = new List<KeyValuePair<Int32, Int32>>( histogram.Take( numDesiredColors ) );  // .Take(N) if N >= .Length, returns of size .Length
+
+                List<byte[]> topColors = new List<byte[]>();
+                foreach( KeyValuePair<Int32, Int32> k in histogram )
+                {
+                    topColors.Add( colorDictionary[ k.Key ] );
                 }
                 
-
+                // get the outputImage
+                for( Int32 y = 0; y < input.Size.Height; ++y )
+                {
+                    ReduceImageColors_ProcessScanline_ConsolidateColors( y, inputBuffer, outputBuffer, pixelDepth, input.Size, topColors, alpha, printPercentage );
+                }
             }
 
             Bitmap output = new Bitmap( input.Size.Width, input.Size.Height, input.PixelFormat );
@@ -281,7 +300,7 @@ namespace ignisilva
             return output;
         }
 
-        private static void ReduceImageColors_ProcessScanline_GenerateHistogram( Int32 y, byte[] inputBuffer, byte[] outputBuffer, Int32 pixelDepth, Size imageSize, Dictionary<Int32, Int32> histogram, bool alpha, bool printPercentage )
+        private static void ReduceImageColors_ProcessScanline_GenerateHistogram( Int32 y, byte[] inputBuffer, byte[] outputBuffer, Int32 pixelDepth, Size imageSize, Dictionary<Int32, Int32> histogram, Dictionary<Int32, byte[]> colorSet, bool alpha, bool printPercentage )
         {
 
             for( Int32 x = 0; x < imageSize.Width; ++x )
@@ -305,28 +324,64 @@ namespace ignisilva
                 else
                 {
                     histogram.Add( colorIndex, 1 );
+                    colorSet.Add( colorIndex, value );
                 }
-                
-                /*for( Int32 color = 0; color < pixelDepth; ++color )
-                {
-                    outputBuffer[pixelIndex + color] = (byte)Clamp( value[color], 0, 255 );
-                }*/
 
                 int _c;
                 if( printPercentage && ( _c = y * imageSize.Width + x ) % 1200 == 0 )
                 {
-                    Console.Write( "{0:F2}%\r", ( (decimal)_c / (decimal)( imageSize.Width * imageSize.Height ) * 100.0m ) );
+                    Console.Write( "{0:F2}%\r", ( (decimal)_c / (decimal)( imageSize.Width * imageSize.Height ) * 50.0m ) );
                 }
             }
             return;
         }
+
+
+        private static void ReduceImageColors_ProcessScanline_ConsolidateColors( Int32 y, byte[] inputBuffer, byte[] outputBuffer, Int32 pixelDepth, Size imageSize, List<byte[]> colors, bool alpha, bool printPercentage )
+        {
+
+            for( Int32 x = 0; x < imageSize.Width; ++x )
+            {
+                Int32 pixelIndex = GetPixelIndex( x, y, imageSize.Width, pixelDepth );
+
+                byte[] value = new byte[pixelDepth];
+                for( Int32 color = 0; color < pixelDepth; ++color ) { value[color] = inputBuffer[pixelIndex + color]; }
+
+                if( !alpha && pixelDepth >= 4 )
+                {
+                    value[3] = 255;
+                }
+
+                Int32 bestColorIndex = 0;
+                float bestColorDist = ColorValueDistance( colors[0], value );
+                for( Int32 i = 1; i < colors.Count; ++i )
+                {
+                    float dist = ColorValueDistance( colors[i], value );
+                    if( dist < bestColorDist )
+                    {
+                        bestColorDist = dist;
+                        bestColorIndex = i;
+                    }
+                }
+
+                for( Int32 color = 0; color < pixelDepth; ++color ) { outputBuffer[pixelIndex + color] = colors[bestColorIndex][color]; }
+
+                int _c;
+                if( printPercentage && ( _c = y * imageSize.Width + x ) % 1200 == 0 )
+                {
+                    Console.Write( "{0:F2}%\r", ( (decimal)_c / (decimal)( imageSize.Width * imageSize.Height ) * 50.0m + 50.0m ) );
+                }
+            }
+            return;
+        }
+
 
         private static Int32 GetPixelIndex( Int32 x, Int32 y, Int32 width, Int32 depth )
         {
             return ( ( y * width ) + x ) * depth;
         }
 
-        private static float ColorValueDistance<T>( byte[] a, byte[] b )
+        private static float ColorValueDistance( byte[] a, byte[] b )
         {
             float sum = 0.0f;
 
