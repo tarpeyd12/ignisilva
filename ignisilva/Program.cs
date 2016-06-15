@@ -89,13 +89,15 @@ namespace ignisilva
                 //sharp = ImageProcessing.ImageKernal( sharp, ImageProcessing.IdentityKernal );
                 sharp.Save( outputFolder + file + "_001_sharp.jpg", jpgCodec, jpgQuality );
 
-                ImageProcessing.ReduceImageColors( gaussian, 2, false, progressPrint ).Save( outputFolder + file + "_006_reduced_2.jpg", jpgCodec, jpgQuality );
+                Hog.CalculateGradiantAnglesToBitmap( image ).Save( outputFolder + file + "_101_hogA.jpg", jpgCodec, jpgQuality );
+
+                /*ImageProcessing.ReduceImageColors( gaussian, 2, false, progressPrint ).Save( outputFolder + file + "_006_reduced_2.jpg", jpgCodec, jpgQuality );
                 ImageProcessing.ReduceImageColors( gaussian, 4, false, progressPrint ).Save( outputFolder + file + "_007_reduced_4.jpg", jpgCodec, jpgQuality );
                 ImageProcessing.ReduceImageColors( gaussian, 8, false, progressPrint ).Save( outputFolder + file + "_008_reduced_8.jpg", jpgCodec, jpgQuality );
                 ImageProcessing.ReduceImageColors( gaussian, 16, false, progressPrint ).Save( outputFolder + file + "_009_reduced_16.jpg", jpgCodec, jpgQuality );
                 ImageProcessing.ReduceImageColors( gaussian, 32, false, progressPrint ).Save( outputFolder + file + "_010_reduced_32.jpg", jpgCodec, jpgQuality );
                 ImageProcessing.ReduceImageColors( gaussian, 64, false, progressPrint ).Save( outputFolder + file + "_011_reduced_64.jpg", jpgCodec, jpgQuality );
-                ImageProcessing.ReduceImageColors( gaussian, 128, false, progressPrint ).Save( outputFolder + file + "_012_reduced_128.jpg", jpgCodec, jpgQuality );
+                ImageProcessing.ReduceImageColors( gaussian, 128, false, progressPrint ).Save( outputFolder + file + "_012_reduced_128.jpg", jpgCodec, jpgQuality );*/
 
                 Bitmap final = gaussian;
                 final = ImageProcessing.ImageKernal( final, ImageProcessing.EdgeFindKernal, false, progressPrint );

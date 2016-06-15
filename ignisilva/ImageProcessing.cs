@@ -11,7 +11,7 @@ namespace ignisilva
 {
     class ImageProcessing
     {
-        private static T Clamp<T>( T val, T min, T max ) where T : IComparable<T>
+        public static T Clamp<T>( T val, T min, T max ) where T : IComparable<T>
         {
             if( val.CompareTo( min ) < 0 ) return min;
             else if( val.CompareTo( max ) > 0 ) return max;
@@ -236,7 +236,7 @@ namespace ignisilva
             return;
         }
 
-
+        // TODO: make this function select actual average colors instead of most common colors
         public static Bitmap ReduceImageColors( Bitmap input, Int32 numDesiredColors = 256, bool alpha = false, bool printPercentage = false )
         {
             // lock input buffer for read only and copy to buffer
@@ -376,7 +376,7 @@ namespace ignisilva
         }
 
 
-        private static Int32 GetPixelIndex( Int32 x, Int32 y, Int32 width, Int32 depth )
+        public static Int32 GetPixelIndex( Int32 x, Int32 y, Int32 width, Int32 depth )
         {
             return ( ( y * width ) + x ) * depth;
         }
@@ -398,5 +398,24 @@ namespace ignisilva
             return BitConverter.ToInt32( color, 0 );
         }
         
+        public static Int32 BytesPerPixelIn( Bitmap input )
+        {
+            return Bitmap.GetPixelFormatSize( input.PixelFormat ) / 8;
+        }
+
+        public static byte[] ExtractImageData( Bitmap input )
+        {
+            Rectangle rect = new Rectangle( 0, 0, input.Width, input.Height );
+            BitmapData dataRegion = input.LockBits( rect, ImageLockMode.ReadOnly, input.PixelFormat );
+            Int32 pixelDepth = Bitmap.GetPixelFormatSize( dataRegion.PixelFormat ) / 8; //bytes per pixel
+            byte[] output = new byte[dataRegion.Width * dataRegion.Height * pixelDepth];
+            //copy pixels to buffer
+            Marshal.Copy( dataRegion.Scan0, output, 0, output.Length );
+
+            input.UnlockBits( dataRegion );
+
+            return output;
+        }
+
     }
 }
