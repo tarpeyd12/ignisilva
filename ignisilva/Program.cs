@@ -63,7 +63,7 @@ namespace ignisilva
                 Console.WriteLine( "Loading " + file );
                 Bitmap image = new Bitmap( Image.FromFile( folder + file ) );
 
-                float maxDimention = 1024.0f;
+                float maxDimention = 512.0f;
                 float scale = Math.Max( maxDimention / image.Width, maxDimention / image.Height );
 
                 if( scale < 1.0f )
@@ -77,19 +77,20 @@ namespace ignisilva
                 //gaussian = ImageProcessing.ImageKernal( ImageProcessing.ImageKernal( gaussian, ImageProcessing.GaussianBlurFastXKernal, false, progressPrint ), ImageProcessing.GaussianBlurFastYKernal, false, progressPrint );
                 gaussian.Save( outputFolder + file + "_000_gaussian.jpg", jpgCodec, jpgQuality );
 
-                Bitmap[] sobel = new Bitmap[4];
+                /*Bitmap[] sobel = new Bitmap[4];
 
                 ( sobel[0] = ImageProcessing.ImageKernal( gaussian, ImageProcessing.SobelXKernal,  false, progressPrint ) ).Save( outputFolder + file + "_002_sobel_x.jpg",  jpgCodec, jpgQuality );
                 ( sobel[1] = ImageProcessing.ImageKernal( gaussian, ImageProcessing.SobelYKernal,  false, progressPrint ) ).Save( outputFolder + file + "_004_sobel_y.jpg",  jpgCodec, jpgQuality );
                 ( sobel[2] = ImageProcessing.ImageKernal( gaussian, ImageProcessing.SobelNXKernal, false, progressPrint ) ).Save( outputFolder + file + "_003_sobel_xn.jpg", jpgCodec, jpgQuality );
                 ( sobel[3] = ImageProcessing.ImageKernal( gaussian, ImageProcessing.SobelNYKernal, false, progressPrint ) ).Save( outputFolder + file + "_005_sobel_yn.jpg", jpgCodec, jpgQuality );
-
+                */
                 Bitmap sharp = gaussian;
                 sharp = ImageProcessing.ImageKernal( sharp, ImageProcessing.SharpenKernal, false, progressPrint );
                 //sharp = ImageProcessing.ImageKernal( sharp, ImageProcessing.IdentityKernal );
                 sharp.Save( outputFolder + file + "_001_sharp.jpg", jpgCodec, jpgQuality );
 
-                Hog.CalculateGradiantAnglesToBitmap( image ).Save( outputFolder + file + "_101_hogA.jpg", jpgCodec, jpgQuality );
+                Hog.CalculateGradiantAnglesToBitmap( gaussian ).Save( outputFolder + file + "_101_hogA.jpg", jpgCodec, jpgQuality );
+                Hog.CalculateGradiantMagnitudesToBitmap( gaussian ).Save( outputFolder + file + "_101_hogM.jpg", jpgCodec, jpgQuality );
 
                 /*ImageProcessing.ReduceImageColors( gaussian, 2, false, progressPrint ).Save( outputFolder + file + "_006_reduced_2.jpg", jpgCodec, jpgQuality );
                 ImageProcessing.ReduceImageColors( gaussian, 4, false, progressPrint ).Save( outputFolder + file + "_007_reduced_4.jpg", jpgCodec, jpgQuality );
