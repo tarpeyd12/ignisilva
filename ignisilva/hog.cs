@@ -220,18 +220,57 @@ namespace ignisilva
             return output;
         }
 
+        public static Bitmap BinGradientsToBitmap2( float[,,] binGradients, Size binSize, Bitmap input )
+        {
+            return BinGradientsToBitmap2( binGradients, binSize, input, Color.Green );
+        }
+
+        public static Bitmap BinGradientsToBitmap2( float[,,] binGradients, Size binSize, Bitmap input, Color color )
+        {
+            Bitmap output = new Bitmap( input );
+
+            for( Int32 y = 0; y < binGradients.GetLength(1); ++y )
+            {
+                for( Int32 x = 0; x < binGradients.GetLength(0); ++x )
+                {
+                    List<KeyValuePair<Int32,float>> dirs = new List<KeyValuePair<Int32,float>>();
+                    for( Int32 z = 0; z < binGradients.GetLength(2); ++z )
+                    {
+                        dirs.Add( new KeyValuePair<Int32, float>( z, binGradients[x, y, z] ) );
+                    }
+
+                    dirs.Sort( ( a, b ) => a.Value.CompareTo( b.Value ) );
+
+                    for( Int32 z = 0; z < dirs.Count; ++z )
+                    {
+                        float angle = (float)((dirs[z].Key/(float)(binGradients.GetLength(2))) * Math.PI);
+                        Int32 cX = (Int32)( ((float)( x )+0.5f)*(float)(binSize.Width) );
+                        Int32 cY = (Int32)( ((float)( y )+0.5f)*(float)(binSize.Height) );
+
+
+
+                    }
+                }
+            }
+
+            return output;
+
+        }
+
         public static Bitmap BinGradientsToBitmap( float[,,] binGradients, Size binSize, Bitmap input )
         {
-            Bitmap output = new Bitmap( binGradients.GetLength(0)*binSize.Width, binGradients.GetLength(1)*binSize.Height );
+            //Bitmap output = new Bitmap( binGradients.GetLength(0)*binSize.Width, binGradients.GetLength(1)*binSize.Height );
+            Bitmap output = new Bitmap( input.Size.Width, input.Size.Height );
 
             for( Int32 y = 0; y < output.Size.Height; ++y )
             {
                 for( Int32 x = 0; x < output.Size.Width; ++x )
                 {
-                    Int32 inX = ImageProcessing.Clamp( x, 0, input.Size.Width-1 );
-                    Int32 inY = ImageProcessing.Clamp( y, 0, input.Size.Height-1 );
+                    //Int32 inX = ImageProcessing.Clamp( x, 0, input.Size.Width-1 );
+                    //Int32 inY = ImageProcessing.Clamp( y, 0, input.Size.Height-1 );
 
                     //Color pixel = input.GetPixel( inX, inY );
+                    Color inpixel = input.GetPixel( x, y );
 
                     Int32 x8 = x/binSize.Width;
                     Int32 y8 = y/binSize.Height;
@@ -239,8 +278,8 @@ namespace ignisilva
                     Int32 x82 = x8*binSize.Width + binSize.Width/2;
                     Int32 y82 = y8*binSize.Height + binSize.Height/2;
 
-                    float rx = (x82-x) + (binSize.Width%2==0?0.0f:0.5f);
-                    float ry = (y82-y) + (binSize.Height%2==0?0.0f:0.5f);
+                    float rx = (x82-x) + (binSize.Width%2!=0?0.0f:0.5f);
+                    float ry = (y82-y) + (binSize.Height%2!=0?0.0f:0.5f);
 
                     if( rx == ry && rx == 0.0f )
                     {
@@ -256,20 +295,23 @@ namespace ignisilva
                     Int32 bin = _get9BinValueFromn01Direction( ang+0.25f );
 
                     float bv = (binGradients[x8,y8,bin]/rmag);
-                    int r = 0;
-                    int g = 0;
-                    int b = 0;
 
-                    Int32 ac = ImageProcessing.Clamp( (Int32)(ang*255.0f), 0, 255 );
-                    Int32 bc = ImageProcessing.Clamp( (Int32)( (float)(bin)*(255.0f/9.0f) ), 0, 255 );
+                    /*int r = 0;
+                    int g = 0;
+                    int b = 0;*/
+
+                    //Int32 ac = ImageProcessing.Clamp( (Int32)(ang*255.0f), 0, 255 );
+                    //Int32 bc = ImageProcessing.Clamp( (Int32)( (float)(bin)*(255.0f/9.0f) ), 0, 255 );
+
                     Int32 pc = ImageProcessing.Clamp( (Int32)(bv*255.0f), 0, 255 );
 
-                    r = 255-pc;
+                    /*r = 255-pc;
                     b = ac;
-                    g = bc;
+                    g = bc;*/
 
+                    Int32 gs = (Int32)(inpixel.GetBrightness()*255.0f);
 
-                    output.SetPixel( x, y, Color.FromArgb( r, r, r ) );
+                    output.SetPixel( x, y, Color.FromArgb( 0, pc, 0 ) );
                 }
             }
 
