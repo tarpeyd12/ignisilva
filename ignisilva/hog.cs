@@ -21,6 +21,17 @@ namespace ignisilva
             return Color.FromArgb( ImageProcessing.GetColorIndex( b ) );
         }
 
+        protected static float _get01AngleFromVxVy( float xG, float yG )
+        {
+            float angle = (float)Math.Atan2( yG, xG );
+            if( angle < 0.0f )
+            {
+                angle += (float)Math.PI * 2.0f;
+            }
+            
+            return angle / ( (float)Math.PI * 2.0f );
+        }
+
         public static float[,,] CalculateGradiantAngles( Bitmap input )
         {
             float[,,] output = new float[input.Size.Width,input.Size.Height,2];
@@ -54,12 +65,13 @@ namespace ignisilva
                         continue;
                     }
 
-                    float angle = (float)Math.Atan2( yG, xG );
+                    /*float angle = (float)Math.Atan2( yG, xG );
                     if( angle < 0.0f )
                     {
                         angle += (float)Math.PI * 2.0f;
                     }
-                    output[x, y, 0] = angle / ( (float)Math.PI * 2.0f );
+                    output[x, y, 0] = angle / ( (float)Math.PI * 2.0f );*/
+                    output[x, y, 0] = _get01AngleFromVxVy( xG, yG );
                     output[x, y, 1] = mag;
                     
                 }
@@ -102,11 +114,11 @@ namespace ignisilva
             {
                 for( Int32 y = 0; y < angleGradients.GetLength( 1 ); ++y )
                 {
-                    float ag = angleGradients[x,y,1];
+                    float mg = angleGradients[x,y,1];
                     Color c = Color.FromArgb( 0, 0, 255);
                     //if( !float.IsNaN( angleGradients[x, y, 0] ) )
                     {
-                        Int32 p = ImageProcessing.Clamp( (Int32)(ag*255.0f), 0, 255 );
+                        Int32 p = ImageProcessing.Clamp( (Int32)(mg*255.0f), 0, 255 );
                         c = Color.FromArgb( p, p, p );
                     }
                     output.SetPixel( x, y, c );
@@ -114,6 +126,47 @@ namespace ignisilva
             }
 
             return output;
+        }
+
+        public static Bitmap CalculateGradiantAngleMagnitudesToBitmap( Bitmap input )
+        {
+            Bitmap output = new Bitmap( input.Size.Width, input.Size.Height );
+
+            float[,,] angleGradients = CalculateGradiantAngles( input );
+
+            for( Int32 x = 0; x < angleGradients.GetLength( 0 ); ++x )
+            {
+                for( Int32 y = 0; y < angleGradients.GetLength( 1 ); ++y )
+                {
+                    Int32 r, g, b;
+                    b = 0;
+
+                    if( float.IsNaN( angleGradients[x, y, 0] ) )
+                    {
+                        r = 0;
+                        b = 255;
+                    }
+                    else
+                    {
+                        r = ImageProcessing.Clamp( (Int32)( angleGradients[x, y, 0] * 255.0f ), 0, 255 );
+                    }
+                    g = ImageProcessing.Clamp( (Int32)(angleGradients[x,y,1]*255.0f), 0, 255 );
+                    
+                    output.SetPixel( x, y, Color.FromArgb( r, g, b ) );
+                }
+            }
+
+            return output;
+        }
+
+        protected static Int32 _get9BinValueFromn01Direction( float input )
+        {
+            float uangle = input * 2.0f - 1.0f; // scale form 0 to 1 to -1 to 1
+
+            if( uangle < 0.0f ) uangle += 1.0f;
+
+            Int32 z = (int)(uangle*9) % 9; // bin in 9's
+            return z;
         }
 
         public static float[,,] BinGradients( float[,,] angles )
@@ -134,9 +187,11 @@ namespace ignisilva
                         continue;
                     }
 
-                    float uangle = Math.Abs(angles[x,y,0]*2.0f-1.0f); // scale form 0 to 1 to -1 to 1
+                    /*float uangle = Math.Abs(angles[x,y,0]*2.0f-1.0f); // scale form 0 to 1 to -1 to 1
                     
                     Int32 z = (int)(uangle*9) % 9; // bin in 9's
+                    */
+                    Int32 z = _get9BinValueFromn01Direction( angles[x,y,0] );
 
                     output[x / binSize.Width, y / binSize.Height, z] += angles[x, y, 1];
                 }
@@ -159,6 +214,62 @@ namespace ignisilva
                     {
                         output[x, y, z] /= mag;
                     }
+                }
+            }
+
+            return output;
+        }
+
+        public static Bitmap BinGradientsToBitmap( float[,,] binGradients, Size binSize, Bitmap input )
+        {
+            Bitmap output = new Bitmap( binGradients.GetLength(0)*binSize.Width, binGradients.GetLength(1)*binSize.Height );
+
+            for( Int32 y = 0; y < output.Size.Height; ++y )
+            {
+                for( Int32 x = 0; x < output.Size.Width; ++x )
+                {
+                    Int32 inX = ImageProcessing.Clamp( x, 0, input.Size.Width-1 );
+                    Int32 inY = ImageProcessing.Clamp( y, 0, input.Size.Height-1 );
+
+                    //Color pixel = input.GetPixel( inX, inY );
+
+                    Int32 x8 = x/binSize.Width;
+                    Int32 y8 = y/binSize.Height;
+
+                    Int32 x82 = x8*binSize.Width + binSize.Width/2;
+                    Int32 y82 = y8*binSize.Height + binSize.Height/2;
+
+                    float rx = (x82-x) + (binSize.Width%2==0?0.0f:0.5f);
+                    float ry = (y82-y) + (binSize.Height%2==0?0.0f:0.5f);
+
+                    if( rx == ry && rx == 0.0f )
+                    {
+                        //output.SetPixel( x, y, Color.FromArgb( 255, 255, 255 ) );
+                        continue;
+                    }
+
+                    float rmag = (float)Math.Sqrt( rx*rx + ry*ry );
+                    rx /= rmag;
+                    ry /= rmag;
+
+                    float ang = _get01AngleFromVxVy( rx, ry );
+                    Int32 bin = _get9BinValueFromn01Direction( ang+0.25f );
+
+                    float bv = (binGradients[x8,y8,bin]/rmag);
+                    int r = 0;
+                    int g = 0;
+                    int b = 0;
+
+                    Int32 ac = ImageProcessing.Clamp( (Int32)(ang*255.0f), 0, 255 );
+                    Int32 bc = ImageProcessing.Clamp( (Int32)( (float)(bin)*(255.0f/9.0f) ), 0, 255 );
+                    Int32 pc = ImageProcessing.Clamp( (Int32)(bv*255.0f), 0, 255 );
+
+                    r = 255-pc;
+                    b = ac;
+                    g = bc;
+
+
+                    output.SetPixel( x, y, Color.FromArgb( r, r, r ) );
                 }
             }
 

@@ -90,7 +90,11 @@ namespace ignisilva
                 sharp.Save( outputFolder + file + "_001_sharp.jpg", jpgCodec, jpgQuality );
 
                 Hog.CalculateGradiantAnglesToBitmap( gaussian ).Save( outputFolder + file + "_101_hogA.jpg", jpgCodec, jpgQuality );
-                Hog.CalculateGradiantMagnitudesToBitmap( gaussian ).Save( outputFolder + file + "_101_hogM.jpg", jpgCodec, jpgQuality );
+                Hog.CalculateGradiantMagnitudesToBitmap( gaussian ).Save( outputFolder + file + "_102_hogM.jpg", jpgCodec, jpgQuality );
+                Hog.CalculateGradiantAngleMagnitudesToBitmap( gaussian ).Save( outputFolder + file + "_103_hogAM.jpg", jpgCodec, jpgQuality );
+
+                Size hogBinSize = new Size(8,8);
+                Hog.BinGradientsToBitmap( Hog.BinGradients( Hog.CalculateGradiantAngles( gaussian ), hogBinSize ), hogBinSize, gaussian ).Save( outputFolder + file + "_104_hogV.png" );
 
                 /*ImageProcessing.ReduceImageColors( gaussian, 2, false, progressPrint ).Save( outputFolder + file + "_006_reduced_2.jpg", jpgCodec, jpgQuality );
                 ImageProcessing.ReduceImageColors( gaussian, 4, false, progressPrint ).Save( outputFolder + file + "_007_reduced_4.jpg", jpgCodec, jpgQuality );
