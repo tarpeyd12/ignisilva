@@ -206,7 +206,7 @@ namespace ignisilva
                     float mag2 = 0.0f;
                     for( Int32 z = 0; z < output.GetLength( 2 ); ++z )
                     {
-                        mag2 += output[x, y, z];
+                        mag2 += output[x, y, z] * output[x, y, z];
                     }
 
                     float mag = (float)Math.Sqrt( mag2 );
@@ -220,15 +220,18 @@ namespace ignisilva
             return output;
         }
 
-        public static Bitmap BinGradientsToBitmap2( float[,,] binGradients, Size binSize, Bitmap input )
+        public static Bitmap BinGradientsToBitmap( float[,,] binGradients, Size binSize, Bitmap input )
         {
-            return BinGradientsToBitmap2( binGradients, binSize, input, Color.Green );
+            return BinGradientsToBitmap( binGradients, binSize, input, Color.FromArgb(0,255,0) );
         }
 
-        public static Bitmap BinGradientsToBitmap2( float[,,] binGradients, Size binSize, Bitmap input, Color color )
+        public static Bitmap BinGradientsToBitmap( float[,,] binGradients, Size binSize, Bitmap input, Color color )
         {
             Bitmap output = new Bitmap( input );
-
+            
+            float halfBinX = (float)binSize.Width / 2.0f;
+            float halfBinY = (float)binSize.Height / 2.0f;
+            
             for( Int32 y = 0; y < binGradients.GetLength(1); ++y )
             {
                 for( Int32 x = 0; x < binGradients.GetLength(0); ++x )
@@ -243,12 +246,21 @@ namespace ignisilva
 
                     for( Int32 z = 0; z < dirs.Count; ++z )
                     {
-                        float angle = (float)((dirs[z].Key/(float)(binGradients.GetLength(2))) * Math.PI);
-                        Int32 cX = (Int32)( ((float)( x )+0.5f)*(float)(binSize.Width) );
-                        Int32 cY = (Int32)( ((float)( y )+0.5f)*(float)(binSize.Height) );
+                        float angle = (float)((dirs[z].Key/(float)(binGradients.GetLength(2))) * Math.PI) + (float)Math.PI*0.5f;
+                        float radius = dirs[z].Value;
+                        float cX = ( ((float)( x )+0.5f)*(float)(binSize.Width) );
+                        float cY = ( ((float)( y )+0.5f)*(float)(binSize.Height) );
 
+                        Int32[] lX = new Int32[] { (Int32)( (float)cX - Math.Cos( angle ) * halfBinX * radius ), (Int32)( (float)cX + Math.Cos( angle ) * halfBinX * radius ) };
+                        Int32[] lY = new Int32[] { (Int32)( (float)cY - Math.Sin( angle ) * halfBinY * radius ), (Int32)( (float)cY + Math.Sin( angle ) * halfBinY * radius ) };
 
-
+                        using( Graphics graphics = Graphics.FromImage( output ) )
+                        {
+                            graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                            Pen pen = new Pen( Color.FromArgb( (Int32)ImageProcessing.Clamp( color.R * radius, 0.0f, 255.0f ), (Int32)ImageProcessing.Clamp( color.G * radius, 0.0f, 255.0f ), (Int32)ImageProcessing.Clamp( color.B * radius, 0.0f, 255.0f ) ), 1 );
+                            graphics.DrawLine( pen, lX[0], lY[0], lX[1], lY[1] );
+                            pen.Dispose();
+                        }
                     }
                 }
             }
@@ -257,7 +269,7 @@ namespace ignisilva
 
         }
 
-        public static Bitmap BinGradientsToBitmap( float[,,] binGradients, Size binSize, Bitmap input )
+        public static Bitmap BinGradientsToBitmap2( float[,,] binGradients, Size binSize, Bitmap input )
         {
             //Bitmap output = new Bitmap( binGradients.GetLength(0)*binSize.Width, binGradients.GetLength(1)*binSize.Height );
             Bitmap output = new Bitmap( input.Size.Width, input.Size.Height );
