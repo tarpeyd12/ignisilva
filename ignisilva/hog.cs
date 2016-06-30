@@ -196,6 +196,13 @@ namespace ignisilva
                     output[x / binSize.Width, y / binSize.Height, z] += angles[x, y, 1];
                 }
             }
+            
+            return output;
+        }
+
+        public static float[,,] NormalizeBinnedGradients( float[,,] binGradients )
+        {
+            float[,,] output = new float[binGradients.GetLength( 0 ), binGradients.GetLength( 1 ), binGradients.GetLength( 2 )];
 
             // normalize the gradients
             // NOTE: I think ...
@@ -206,13 +213,72 @@ namespace ignisilva
                     float mag2 = 0.0f;
                     for( Int32 z = 0; z < output.GetLength( 2 ); ++z )
                     {
-                        mag2 += output[x, y, z] * output[x, y, z];
+                        mag2 += binGradients[x, y, z] * binGradients[x, y, z];
                     }
 
                     float mag = (float)Math.Sqrt( mag2 );
+
                     for( Int32 z = 0; z < output.GetLength( 2 ); ++z )
                     {
-                        output[x, y, z] /= mag;
+                        output[x, y, z] = binGradients[x, y, z] / mag;
+                    }
+                }
+            }
+
+            return output;
+        }
+
+        public static float[,,] NormalizeBinnedGradients2( float[,,] binGradients, Size windowSize )
+        {
+            float[,,] output = new float[binGradients.GetLength( 0 ), binGradients.GetLength( 1 ), binGradients.GetLength( 2 )];
+            float[,] mag2 = new float[binGradients.GetLength( 0 ), binGradients.GetLength( 1 )];
+
+
+            // normalize the gradients
+            // NOTE: I think ...
+            for( Int32 x = 0; x < output.GetLength( 0 ); ++x )
+            {
+                for( Int32 y = 0; y < output.GetLength( 1 ); ++y )
+                {
+                    float m = 0.0f;
+                    for( Int32 _x = 0; _x < windowSize.Width; ++_x )
+                    {
+                        for( Int32 _y = 0; _y < windowSize.Height; ++_y )
+                        {
+                            Int32 bx = ImageProcessing.Clamp( x + _x - ( windowSize.Width - 1 ) / 2, 0, output.GetLength( 0 ) - 1 );
+                            Int32 by = ImageProcessing.Clamp( y + _y - ( windowSize.Height - 1 ) / 2, 0, output.GetLength( 1 ) - 1 );
+
+                            for( Int32 z = 0; z < output.GetLength( 2 ); ++z )
+                            {
+                                m += binGradients[bx, by, z] * binGradients[bx, by, z];
+                            }
+                        }
+                    }
+
+                    for( Int32 _x = 0; _x < windowSize.Width; ++_x )
+                    {
+                        for( Int32 _y = 0; _y < windowSize.Height; ++_y )
+                        {
+                            Int32 bx = ImageProcessing.Clamp( x + _x - ( windowSize.Width - 1 ) / 2, 0, output.GetLength( 0 ) - 1 );
+                            Int32 by = ImageProcessing.Clamp( y + _y - ( windowSize.Height - 1 ) / 2, 0, output.GetLength( 1 ) - 1 );
+
+                            mag2[bx, by] += m;
+                        }
+                    }
+                }
+            }
+
+            float cc = windowSize.Width * windowSize.Height;
+
+            for( Int32 x = 0; x < output.GetLength( 0 ); ++x )
+            {
+                for( Int32 y = 0; y < output.GetLength( 1 ); ++y )
+                {
+                    float mag = (float)Math.Sqrt( mag2[x, y] / cc );
+
+                    for( Int32 z = 0; z < output.GetLength( 2 ); ++z )
+                    {
+                        output[x, y, z] = binGradients[x, y, z] / mag;
                     }
                 }
             }
@@ -246,7 +312,7 @@ namespace ignisilva
 
                     for( Int32 z = 0; z < dirs.Count; ++z )
                     {
-                        float angle = (float)((dirs[z].Key/(float)(binGradients.GetLength(2))) * Math.PI) + (float)Math.PI*0.5f;
+                        float angle = (float)( ( dirs[z].Key / (float)( binGradients.GetLength( 2 ) ) ) * Math.PI ) + (float)Math.PI * 0.5f;
                         float radius = dirs[z].Value;
                         float cX = ( ((float)( x )+0.5f)*(float)(binSize.Width) );
                         float cY = ( ((float)( y )+0.5f)*(float)(binSize.Height) );

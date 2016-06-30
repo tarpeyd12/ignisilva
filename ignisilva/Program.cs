@@ -20,7 +20,7 @@ namespace ignisilva
             string folder = @"../../../images/";
             string outputFolder = @"../../../images/out/";
             
-            string[] extensions = { @".jpg", @".png" };
+            string[] extensions = { @".jpg", @".png", @".bmp"/*, @".psd"*/ };
 
             int maxImageDimention = 1024;
             int HOG_block_size = 8;
@@ -61,14 +61,18 @@ namespace ignisilva
 
                 string file = fileinfo.Name;
                 string directory = fileinfo.DirectoryName;
+                
+                /*bool extcheck = false;
+                foreach( string ext in extensions )
+                {
 
-                if( !(file.EndsWith(".png") || file.EndsWith( ".jpg" ) ) )
+                }
+                if( !extcheck )
                 {
                     return;
-                }
+                }*/
 
-                Console.WriteLine( "Loading " + file );
-                //Bitmap image = new Bitmap( Image.FromFile( folder + file ) );
+                Console.WriteLine( "Loading {0} ({1} KBytes).", file, fileinfo.Length/1024 );
                 Bitmap image = new Bitmap( Image.FromFile( fileinfo.FullName ) );
 
                 double maxDimention = maxImageDimention;
@@ -79,7 +83,7 @@ namespace ignisilva
                     image = new Bitmap( image, new Size( (int)( image.Width * scale ), (int)( image.Height * scale ) ) );
                 }
 
-                if( true )
+                if( !true )
                 {
                     image.Save( outputFolder + file + "_000_scaled.jpg", jpgCodec, jpgQuality );
                 }
@@ -94,15 +98,15 @@ namespace ignisilva
                     gaussian.Save( outputFolder + file + "_001_gaussian.jpg", jpgCodec, jpgQuality );
                 }
 
-                if( true )
+                if( !true )
                 {
-                    /*Bitmap[] sobel = new Bitmap[4];
+                    Bitmap[] sobel = new Bitmap[4];
 
                     ( sobel[0] = ImageProcessing.ImageKernal( gaussian, ImageProcessing.SobelXKernal,  false, progressPrint ) ).Save( outputFolder + file + "_201_sobel_x.jpg",  jpgCodec, jpgQuality );
                     ( sobel[1] = ImageProcessing.ImageKernal( gaussian, ImageProcessing.SobelYKernal,  false, progressPrint ) ).Save( outputFolder + file + "_202_sobel_y.jpg",  jpgCodec, jpgQuality );
                     ( sobel[2] = ImageProcessing.ImageKernal( gaussian, ImageProcessing.SobelNXKernal, false, progressPrint ) ).Save( outputFolder + file + "_203_sobel_xn.jpg", jpgCodec, jpgQuality );
                     ( sobel[3] = ImageProcessing.ImageKernal( gaussian, ImageProcessing.SobelNYKernal, false, progressPrint ) ).Save( outputFolder + file + "_204_sobel_yn.jpg", jpgCodec, jpgQuality );
-                    */
+                    
                 }
 
                 if( !true )
@@ -130,7 +134,8 @@ namespace ignisilva
 
                     float[,,] gradientAngles = Hog.CalculateGradiantAngles( hogInput );
                     float[,,] binGradients = Hog.BinGradients( gradientAngles, hogBinSize );
-
+                    binGradients = Hog.NormalizeBinnedGradients2( binGradients, new Size( 2, 2 ) );
+                     
                     Bitmap backdropImage = ImageProcessing.MakeGrayscale3( image );
                     backdropImage = ImageProcessing.ImageKernal( backdropImage, new float[,] { { 0.0f } } );
 
@@ -139,15 +144,15 @@ namespace ignisilva
                     hogOutput.Save( outputFolder + file + "_104_hogV.png" );
                 }
 
-                if( true )
+                if( !true )
                 {
-                    /*ImageProcessing.ReduceImageColors( gaussian, 2, false, progressPrint ).Save( outputFolder + file + "_006_reduced_2.jpg", jpgCodec, jpgQuality );
+                    ImageProcessing.ReduceImageColors( gaussian, 2, false, progressPrint ).Save( outputFolder + file + "_006_reduced_2.jpg", jpgCodec, jpgQuality );
                     ImageProcessing.ReduceImageColors( gaussian, 4, false, progressPrint ).Save( outputFolder + file + "_007_reduced_4.jpg", jpgCodec, jpgQuality );
                     ImageProcessing.ReduceImageColors( gaussian, 8, false, progressPrint ).Save( outputFolder + file + "_008_reduced_8.jpg", jpgCodec, jpgQuality );
                     ImageProcessing.ReduceImageColors( gaussian, 16, false, progressPrint ).Save( outputFolder + file + "_009_reduced_16.jpg", jpgCodec, jpgQuality );
                     ImageProcessing.ReduceImageColors( gaussian, 32, false, progressPrint ).Save( outputFolder + file + "_010_reduced_32.jpg", jpgCodec, jpgQuality );
                     ImageProcessing.ReduceImageColors( gaussian, 64, false, progressPrint ).Save( outputFolder + file + "_011_reduced_64.jpg", jpgCodec, jpgQuality );
-                    ImageProcessing.ReduceImageColors( gaussian, 128, false, progressPrint ).Save( outputFolder + file + "_012_reduced_128.jpg", jpgCodec, jpgQuality );*/
+                    ImageProcessing.ReduceImageColors( gaussian, 128, false, progressPrint ).Save( outputFolder + file + "_012_reduced_128.jpg", jpgCodec, jpgQuality );
                 }
 
                 if( !true )
