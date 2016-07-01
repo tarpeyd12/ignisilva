@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 namespace ignisilva
 {
     
-
     class DecisionTree
     {
         public int NumInputs  { get; }
@@ -40,19 +39,20 @@ namespace ignisilva
         {
             if( input.Length != NumInputs )
             {
-                // TODO: ERROR
+                // error
+                return null;
             }
 
             Int32 NextNodeID = 0;
 
-            DecisionNode node = tree[NextNodeID];
+            DecisionNode node = null;
 
-            while( NextNodeID >= 0 )
+            do
             {
-                NextNodeID = node.NextNodeByDecision( input );
                 node = tree[NextNodeID];
             }
-
+            while( ( NextNodeID = node.NextNodeByDecision( input ) ) >= 0 );
+            
             return node.Output;
         }
     }

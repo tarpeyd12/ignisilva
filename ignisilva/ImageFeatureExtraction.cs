@@ -138,9 +138,9 @@ namespace ignisilva
 
             if( imageTypesToSave[itts++] || true )
             {
-                //Hog.CalculateGradiantAnglesToBitmap( gaussian ).Save( outputFolder + file + "_"+itts+"01_hogA.jpg", jpgCodec, jpgQuality );
-                //Hog.CalculateGradiantMagnitudesToBitmap( gaussian ).Save( outputFolder + file + "_"+itts+"02_hogM.jpg", jpgCodec, jpgQuality );
-                //Hog.CalculateGradiantAngleMagnitudesToBitmap( gaussian ).Save( outputFolder + file + "_"+itts+"03_hogAM.jpg", jpgCodec, jpgQuality );
+                //Hog.CalculateGradiantAnglesToBitmap( gaussian ).Save( outputFolder + fileinfo.Name + "_"+itts+"01_hogA.jpg", jpgCodec, jpgQuality );
+                //Hog.CalculateGradiantMagnitudesToBitmap( gaussian ).Save( outputFolder + fileinfo.Name + "_"+itts+"02_hogM.jpg", jpgCodec, jpgQuality );
+                //Hog.CalculateGradiantAngleMagnitudesToBitmap( gaussian ).Save( outputFolder + fileinfo.Name + "_"+itts+"03_hogAM.jpg", jpgCodec, jpgQuality );
 
                 Bitmap hogInput = gaussian;
 

@@ -229,6 +229,38 @@ namespace ignisilva
             return;
         }
 
+        public static Bitmap AddImages( Bitmap input1, Bitmap input2 )
+        {
+            Size outputSize = new Size( Math.Min( input1.Width, input2.Width ), Math.Min( input1.Height, input2.Height ) );
+
+            byte[] imageData1 = ExtractImageData( input1 );
+            byte[] imageData2 = ExtractImageData( input2 );
+
+            int numColors1 = BytesPerPixelIn( input1 );
+            int numColors2 = BytesPerPixelIn( input2 );
+
+            int numColors = Math.Min( numColors1, numColors2 );
+            
+            byte[] outputData = new byte[imageData1.Length];
+
+            for( Int32 x = 0; x < outputSize.Width; ++x )
+            {
+                for( Int32 y = 0; y < outputSize.Height; ++y )
+                {
+                    for( Int32 color = 0; color < numColors; ++color )
+                    {
+                        int c1 = imageData1[GetPixelIndex( x, y, input1.Width, numColors1 ) + color];
+                        int c2 = imageData2[GetPixelIndex( x, y, input2.Width, numColors2 ) + color];
+                        outputData[GetPixelIndex( x, y, outputSize.Width, numColors ) + color] = (byte)Func.Clamp( (int)c1 + (int)c2, 0, 255 );
+                    }
+                }
+            }
+
+            // TODO: finish implementation
+
+            return null;
+        }
+
         // TODO: make this function select actual average colors instead of most common colors
         public static Bitmap ReduceImageColors( Bitmap input, Int32 numDesiredColors = 256, bool alpha = false, bool printPercentage = false )
         {

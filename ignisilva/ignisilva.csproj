@@ -60,6 +60,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DecisionForest.cs" />
     <Compile Include="DecisionNode.cs" />
     <Compile Include="DecisionTree.cs" />
     <Compile Include="func.cs" />
