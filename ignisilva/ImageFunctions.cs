@@ -9,15 +9,8 @@ using System.Drawing.Imaging;
 
 namespace ignisilva
 {
-    class ImageProcessing
+    class ImageFunctions
     {
-        public static T Clamp<T>( T val, T min, T max ) where T : IComparable<T>
-        {
-            if( val.CompareTo( min ) < 0 ) return min;
-            else if( val.CompareTo( max ) > 0 ) return max;
-            else return val;
-        }
-
         public static float[,] IdentityKernal
         {
             get
@@ -201,8 +194,8 @@ namespace ignisilva
                 {
                     for( Int32 _x = -halfMatrixSize.Width; _x <= halfMatrixSize.Width; ++_x )
                     {
-                        Int32 px = Clamp( x + _y, 0, imageSize.Width - 1 );
-                        Int32 py = Clamp( y + _x, 0, imageSize.Height - 1 );
+                        Int32 px = Func.Clamp( x + _y, 0, imageSize.Width - 1 );
+                        Int32 py = Func.Clamp( y + _x, 0, imageSize.Height - 1 );
 
                         Int32 inputBufferPixelIndex = GetPixelIndex( px, py, imageSize.Width, pixelDepth );
 
@@ -224,7 +217,7 @@ namespace ignisilva
                 }
                 for( Int32 color = 0; color < pixelDepth; ++color )
                 {
-                    outputBuffer[outputBufferPixelIndex + color] = (byte)Clamp( value[color], 0.0f, 255.0f );
+                    outputBuffer[outputBufferPixelIndex + color] = (byte)Func.Clamp( value[color], 0.0f, 255.0f );
                 }
 
                 int _c;

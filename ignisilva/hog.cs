@@ -18,7 +18,7 @@ namespace ignisilva
 
         private static Color BytesToColor( byte[] b )
         {
-            return Color.FromArgb( ImageProcessing.GetColorIndex( b ) );
+            return Color.FromArgb( ImageFunctions.GetColorIndex( b ) );
         }
 
         protected static float _get01AngleFromVxVy( float xG, float yG )
@@ -36,16 +36,16 @@ namespace ignisilva
         {
             float[,,] output = new float[input.Size.Width,input.Size.Height,2];
 
-            Int32 pixelDepth = ImageProcessing.BytesPerPixelIn( input );
+            Int32 pixelDepth = ImageFunctions.BytesPerPixelIn( input );
 
-            byte[] pixels = ImageProcessing.ExtractImageData( input );
+            byte[] pixels = ImageFunctions.ExtractImageData( input );
 
             for( Int32 x = 0; x < output.GetLength( 0 ); ++x )
             {
                 for( Int32 y = 0; y < output.GetLength( 1 ); ++y )
                 {
-                    Int32[] xIndexes = new Int32[] { ImageProcessing.GetPixelIndex( ImageProcessing.Clamp( x + 1, 0, input.Size.Width - 1 ),  y, input.Size.Width, pixelDepth ), ImageProcessing.GetPixelIndex( ImageProcessing.Clamp( x - 1, 0, input.Size.Width - 1 ),  y, input.Size.Width, pixelDepth ) };
-                    Int32[] yIndexes = new Int32[] { ImageProcessing.GetPixelIndex( x, ImageProcessing.Clamp( y + 1, 0, input.Size.Height - 1 ), input.Size.Width, pixelDepth ), ImageProcessing.GetPixelIndex( x, ImageProcessing.Clamp( y - 1, 0, input.Size.Height - 1 ), input.Size.Width, pixelDepth ) };
+                    Int32[] xIndexes = new Int32[] { ImageFunctions.GetPixelIndex( Func.Clamp( x + 1, 0, input.Size.Width - 1 ),  y, input.Size.Width, pixelDepth ), ImageFunctions.GetPixelIndex( Func.Clamp( x - 1, 0, input.Size.Width - 1 ),  y, input.Size.Width, pixelDepth ) };
+                    Int32[] yIndexes = new Int32[] { ImageFunctions.GetPixelIndex( x, Func.Clamp( y + 1, 0, input.Size.Height - 1 ), input.Size.Width, pixelDepth ), ImageFunctions.GetPixelIndex( x, Func.Clamp( y - 1, 0, input.Size.Height - 1 ), input.Size.Width, pixelDepth ) };
 
                     Color[] xColors = new Color[] { BytesToColor( pixels, xIndexes[0], pixelDepth ), BytesToColor( pixels, xIndexes[1], pixelDepth ) };
                     Color[] yColors = new Color[] { BytesToColor( pixels, yIndexes[0], pixelDepth ), BytesToColor( pixels, yIndexes[1], pixelDepth ) };
@@ -94,7 +94,7 @@ namespace ignisilva
                     Color c = Color.FromArgb( 0, 0, 255);
                     if( !float.IsNaN( ag ) )
                     {
-                        Int32 p = ImageProcessing.Clamp( (Int32)(ag*255.0f), 0, 255 );
+                        Int32 p = Func.Clamp( (Int32)(ag*255.0f), 0, 255 );
                         c = Color.FromArgb( p, p, p );
                     }
                     output.SetPixel( x, y, c ); 
@@ -118,7 +118,7 @@ namespace ignisilva
                     Color c = Color.FromArgb( 0, 0, 255);
                     //if( !float.IsNaN( angleGradients[x, y, 0] ) )
                     {
-                        Int32 p = ImageProcessing.Clamp( (Int32)(mg*255.0f), 0, 255 );
+                        Int32 p = Func.Clamp( (Int32)(mg*255.0f), 0, 255 );
                         c = Color.FromArgb( p, p, p );
                     }
                     output.SetPixel( x, y, c );
@@ -148,9 +148,9 @@ namespace ignisilva
                     }
                     else
                     {
-                        r = ImageProcessing.Clamp( (Int32)( angleGradients[x, y, 0] * 255.0f ), 0, 255 );
+                        r = Func.Clamp( (Int32)( angleGradients[x, y, 0] * 255.0f ), 0, 255 );
                     }
-                    g = ImageProcessing.Clamp( (Int32)(angleGradients[x,y,1]*255.0f), 0, 255 );
+                    g = Func.Clamp( (Int32)(angleGradients[x,y,1]*255.0f), 0, 255 );
                     
                     output.SetPixel( x, y, Color.FromArgb( r, g, b ) );
                 }
@@ -245,8 +245,8 @@ namespace ignisilva
                     {
                         for( Int32 _y = 0; _y < windowSize.Height; ++_y )
                         {
-                            Int32 bx = ImageProcessing.Clamp( x + _x - ( windowSize.Width - 1 ) / 2, 0, output.GetLength( 0 ) - 1 );
-                            Int32 by = ImageProcessing.Clamp( y + _y - ( windowSize.Height - 1 ) / 2, 0, output.GetLength( 1 ) - 1 );
+                            Int32 bx = Func.Clamp( x + _x - ( windowSize.Width - 1 ) / 2, 0, output.GetLength( 0 ) - 1 );
+                            Int32 by = Func.Clamp( y + _y - ( windowSize.Height - 1 ) / 2, 0, output.GetLength( 1 ) - 1 );
 
                             for( Int32 z = 0; z < output.GetLength( 2 ); ++z )
                             {
@@ -259,8 +259,8 @@ namespace ignisilva
                     {
                         for( Int32 _y = 0; _y < windowSize.Height; ++_y )
                         {
-                            Int32 bx = ImageProcessing.Clamp( x + _x - ( windowSize.Width - 1 ) / 2, 0, output.GetLength( 0 ) - 1 );
-                            Int32 by = ImageProcessing.Clamp( y + _y - ( windowSize.Height - 1 ) / 2, 0, output.GetLength( 1 ) - 1 );
+                            Int32 bx = Func.Clamp( x + _x - ( windowSize.Width - 1 ) / 2, 0, output.GetLength( 0 ) - 1 );
+                            Int32 by = Func.Clamp( y + _y - ( windowSize.Height - 1 ) / 2, 0, output.GetLength( 1 ) - 1 );
 
                             mag2[bx, by] += m;
                         }
@@ -323,7 +323,7 @@ namespace ignisilva
                         using( Graphics graphics = Graphics.FromImage( output ) )
                         {
                             graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-                            Pen pen = new Pen( Color.FromArgb( (Int32)ImageProcessing.Clamp( color.R * radius, 0.0f, 255.0f ), (Int32)ImageProcessing.Clamp( color.G * radius, 0.0f, 255.0f ), (Int32)ImageProcessing.Clamp( color.B * radius, 0.0f, 255.0f ) ), 1 );
+                            Pen pen = new Pen( Color.FromArgb( (Int32)Func.Clamp( color.R * radius, 0.0f, 255.0f ), (Int32)Func.Clamp( color.G * radius, 0.0f, 255.0f ), (Int32)Func.Clamp( color.B * radius, 0.0f, 255.0f ) ), 1 );
                             graphics.DrawLine( pen, lX[0], lY[0], lX[1], lY[1] );
                             pen.Dispose();
                         }
@@ -381,7 +381,7 @@ namespace ignisilva
                     //Int32 ac = ImageProcessing.Clamp( (Int32)(ang*255.0f), 0, 255 );
                     //Int32 bc = ImageProcessing.Clamp( (Int32)( (float)(bin)*(255.0f/9.0f) ), 0, 255 );
 
-                    Int32 pc = ImageProcessing.Clamp( (Int32)(bv*255.0f), 0, 255 );
+                    Int32 pc = Func.Clamp( (Int32)(bv*255.0f), 0, 255 );
 
                     /*r = 255-pc;
                     b = ac;
