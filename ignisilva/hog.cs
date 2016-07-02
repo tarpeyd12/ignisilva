@@ -40,9 +40,9 @@ namespace ignisilva
 
             byte[] pixels = ImageFunctions.ExtractImageData( input );
 
-            for( Int32 x = 0; x < output.GetLength( 0 ); ++x )
+            for( Int32 y = 0; y < output.GetLength( 1 ); ++y )
             {
-                for( Int32 y = 0; y < output.GetLength( 1 ); ++y )
+                for( Int32 x = 0; x < output.GetLength( 0 ); ++x )
                 {
                     Int32[] xIndexes = new Int32[] { ImageFunctions.GetPixelIndex( Func.Clamp( x + 1, 0, input.Size.Width - 1 ),  y, input.Size.Width, pixelDepth ), ImageFunctions.GetPixelIndex( Func.Clamp( x - 1, 0, input.Size.Width - 1 ),  y, input.Size.Width, pixelDepth ) };
                     Int32[] yIndexes = new Int32[] { ImageFunctions.GetPixelIndex( x, Func.Clamp( y + 1, 0, input.Size.Height - 1 ), input.Size.Width, pixelDepth ), ImageFunctions.GetPixelIndex( x, Func.Clamp( y - 1, 0, input.Size.Height - 1 ), input.Size.Width, pixelDepth ) };
@@ -86,9 +86,9 @@ namespace ignisilva
 
             float[,,] angleGradients = CalculateGradiantAngles( input );
 
-            for( Int32 x = 0; x < angleGradients.GetLength( 0 ); ++x )
+            for( Int32 y = 0; y < angleGradients.GetLength( 1 ); ++y )
             {
-                for( Int32 y = 0; y < angleGradients.GetLength( 1 ); ++y )
+                for( Int32 x = 0; x < angleGradients.GetLength( 0 ); ++x )
                 {
                     float ag = angleGradients[x,y,0];
                     Color c = Color.FromArgb( 0, 0, 255);
@@ -110,9 +110,9 @@ namespace ignisilva
 
             float[,,] angleGradients = CalculateGradiantAngles( input );
 
-            for( Int32 x = 0; x < angleGradients.GetLength( 0 ); ++x )
+            for( Int32 y = 0; y < angleGradients.GetLength( 1 ); ++y )
             {
-                for( Int32 y = 0; y < angleGradients.GetLength( 1 ); ++y )
+                for( Int32 x = 0; x < angleGradients.GetLength( 0 ); ++x )
                 {
                     float mg = angleGradients[x,y,1];
                     Color c = Color.FromArgb( 0, 0, 255);
@@ -134,9 +134,9 @@ namespace ignisilva
 
             float[,,] angleGradients = CalculateGradiantAngles( input );
 
-            for( Int32 x = 0; x < angleGradients.GetLength( 0 ); ++x )
+            for( Int32 y = 0; y < angleGradients.GetLength( 1 ); ++y )
             {
-                for( Int32 y = 0; y < angleGradients.GetLength( 1 ); ++y )
+                for( Int32 x = 0; x < angleGradients.GetLength( 0 ); ++x )
                 {
                     Int32 r, g, b;
                     b = 0;
@@ -178,9 +178,9 @@ namespace ignisilva
         {
             float[,,] output = new float[angles.GetLength(0)/binSize.Width+1,angles.GetLength(1)/binSize.Height+1,9];
 
-            for( Int32 x = 0; x < angles.GetLength( 0 ); ++x )
+            for( Int32 y = 0; y < angles.GetLength( 1 ); ++y )
             {
-                for( Int32 y = 0; y < angles.GetLength( 1 ); ++y )
+                for( Int32 x = 0; x < angles.GetLength( 0 ); ++x )
                 {
                     if( float.IsNaN( angles[x, y, 0] ) )
                     {
@@ -206,9 +206,9 @@ namespace ignisilva
 
             // normalize the gradients
             // NOTE: I think ...
-            for( Int32 x = 0; x < output.GetLength( 0 ); ++x )
+            for( Int32 y = 0; y < output.GetLength( 1 ); ++y )
             {
-                for( Int32 y = 0; y < output.GetLength( 1 ); ++y )
+                for( Int32 x = 0; x < output.GetLength( 0 ); ++x )
                 {
                     float mag2 = 0.0f;
                     for( Int32 z = 0; z < output.GetLength( 2 ); ++z )
@@ -236,14 +236,15 @@ namespace ignisilva
 
             // normalize the gradients
             // NOTE: I think ...
-            for( Int32 x = 0; x < output.GetLength( 0 ); ++x )
+            for( Int32 y = 0; y < output.GetLength( 1 ); ++y )
             {
-                for( Int32 y = 0; y < output.GetLength( 1 ); ++y )
+                for( Int32 x = 0; x < output.GetLength( 0 ); ++x )
                 {
                     float m = 0.0f;
-                    for( Int32 _x = 0; _x < windowSize.Width; ++_x )
+                    for( Int32 _y = 0; _y < windowSize.Height; ++_y )
                     {
-                        for( Int32 _y = 0; _y < windowSize.Height; ++_y )
+                        
+                        for( Int32 _x = 0; _x < windowSize.Width; ++_x )
                         {
                             Int32 bx = Func.Clamp( x + _x - ( windowSize.Width - 1 ) / 2, 0, output.GetLength( 0 ) - 1 );
                             Int32 by = Func.Clamp( y + _y - ( windowSize.Height - 1 ) / 2, 0, output.GetLength( 1 ) - 1 );
@@ -255,9 +256,9 @@ namespace ignisilva
                         }
                     }
 
-                    for( Int32 _x = 0; _x < windowSize.Width; ++_x )
+                    for( Int32 _y = 0; _y < windowSize.Height; ++_y )
                     {
-                        for( Int32 _y = 0; _y < windowSize.Height; ++_y )
+                        for( Int32 _x = 0; _x < windowSize.Width; ++_x )
                         {
                             Int32 bx = Func.Clamp( x + _x - ( windowSize.Width - 1 ) / 2, 0, output.GetLength( 0 ) - 1 );
                             Int32 by = Func.Clamp( y + _y - ( windowSize.Height - 1 ) / 2, 0, output.GetLength( 1 ) - 1 );
@@ -270,9 +271,9 @@ namespace ignisilva
 
             float cc = windowSize.Width * windowSize.Height;
 
-            for( Int32 x = 0; x < output.GetLength( 0 ); ++x )
+            for( Int32 y = 0; y < output.GetLength( 1 ); ++y )
             {
-                for( Int32 y = 0; y < output.GetLength( 1 ); ++y )
+                for( Int32 x = 0; x < output.GetLength( 0 ); ++x )
                 {
                     float mag = (float)Math.Sqrt( mag2[x, y] / cc );
 

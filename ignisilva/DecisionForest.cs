@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml;
 
 namespace ignisilva
 {
-    class DecisionForest
+    class DecisionForest : IXmlWritable
     {
         public int NumInputs { get; }
         public int NumOutputs { get; }
@@ -61,12 +62,28 @@ namespace ignisilva
 
             for( Int32 i = 0; i < NumOutputs; ++i )
             {
-                output[i] = (byte)Func.Clamp( ((float)sums[i] / (float)forest.Count), 0.0f, 255.0f );
+                output[i] = (byte)Func.Clamp( ((double)sums[i] / (double)forest.Count), 0.0f, 255.0f );
             }
 
             return output;
         }
 
+        public XmlWriter WriteXml( XmlWriter xml )
+        {
+            xml.WriteStartElement( "forest" );
+
+            xml.WriteAttributeString( "num", forest.Count.ToString() );
+            xml.WriteAttributeString( "inputs", NumInputs.ToString() );
+            xml.WriteAttributeString( "outputs", NumOutputs.ToString() );
+
+            foreach( DecisionTree tree in forest )
+            {
+                tree.WriteXml( xml );
+            }
+
+            xml.WriteEndElement();
+            return xml;
+        }
 
     }
 }

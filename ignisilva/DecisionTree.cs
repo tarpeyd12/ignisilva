@@ -3,16 +3,18 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml;
 
 namespace ignisilva
 {
     
-    class DecisionTree
+    class DecisionTree : IXmlWritable
     {
         public int NumInputs  { get; }
         public int NumOutputs { get; }
 
         private Dictionary<Int32,DecisionNode> tree;
+        private DecisionNode[] flatTree;
 
         // blank tree constructor
         public DecisionTree( int _numInputs, int _numOutputs )
@@ -20,6 +22,7 @@ namespace ignisilva
             NumInputs = _numInputs;
             NumOutputs = _numOutputs;
             tree = new Dictionary<int, DecisionNode>();
+            flatTree = null; ;
         }
 
         public bool AddNode( DecisionNode node )
@@ -31,6 +34,7 @@ namespace ignisilva
             }
 
             tree.Add( node.ID, node );
+            flatTree = null;
 
             return true;
         }
@@ -43,17 +47,41 @@ namespace ignisilva
                 return null;
             }
 
+            if( flatTree == null )
+            {
+                flatTree = new DecisionNode[tree.Count];
+                foreach( KeyValuePair<int,DecisionNode> pair in tree.ToList() )
+                {
+                    flatTree[pair.Key] = pair.Value;
+                }
+            }
+
             Int32 NextNodeID = 0;
 
             DecisionNode node = null;
 
             do
             {
-                node = tree[NextNodeID];
+                //node = tree[NextNodeID];
+                node = flatTree[NextNodeID];
             }
             while( ( NextNodeID = node.NextNodeByDecision( input ) ) >= 0 );
             
             return node.Output;
+        }
+
+        public XmlWriter WriteXml( XmlWriter xml )
+        {
+            xml.WriteStartElement( "tree" );
+            xml.WriteAttributeString( "inputs", NumInputs.ToString() );
+            xml.WriteAttributeString( "outputs", NumOutputs.ToString() );
+            foreach( KeyValuePair<int, DecisionNode> keyNode in tree.ToList() ) 
+            {
+                DecisionNode node = keyNode.Value;
+                node.WriteXml( xml );
+            }
+            xml.WriteEndElement();
+            return xml;
         }
     }
     

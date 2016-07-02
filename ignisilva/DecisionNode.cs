@@ -3,17 +3,18 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml;
 
 namespace ignisilva
 {
-    class DecisionNode
+    class DecisionNode : IXmlWritable
     {
-        public Int32   ID         { get; } // node ID
-        public bool    IsLeaf     { get { return ( Output != null ); } } // do we have output???
-        public int     SplitIndex { get; }
-        public int     SplitValue { get; }
-        public Int32[] Next       { get; }
-        public byte[]  Output     { get; }
+        public Int32 ID { get; } // node ID
+        public bool IsLeaf { get { return ( Output != null ); } } // do we have output???
+        public int SplitIndex { get; }
+        public int SplitValue { get; }
+        public Int32[] Next { get; }
+        public byte[] Output { get; }
 
         // node constructor
         public DecisionNode( Int32 _ID, int _splitIndex, int _splitValue, Int32 _nextLess, Int32 _nextGreater )
@@ -31,7 +32,7 @@ namespace ignisilva
             ID = Int32.Parse( _ID );
             SplitIndex = Int32.Parse( _splitIndex );
             SplitValue = Int32.Parse( _splitValue );
-            string[] _nextSplit = _next.Split(',');
+            string[] _nextSplit = _next.Split( ',' );
             Next = new Int32[] { Int32.Parse( _nextSplit[0] ), Int32.Parse( _nextSplit[1] ) };
             Output = null;
         }
@@ -63,8 +64,42 @@ namespace ignisilva
                 return -1;
             }
 
-            return Next[ ( input[SplitIndex] < SplitValue ) ? 0 : 1 ];
+            return Next[( input[SplitIndex] < SplitValue ) ? 0 : 1];
         }
-        
+
+        public XmlWriter WriteXml( XmlWriter xml )
+        {
+            xml.WriteStartElement( "node" );
+
+            xml.WriteAttributeString( "id", ID.ToString() );
+
+            if( !IsLeaf )
+            {
+                xml.WriteAttributeString( "type", "node" );
+                xml.WriteAttributeString( "split_index", SplitIndex.ToString() );
+                xml.WriteAttributeString( "split_value", SplitValue.ToString() );
+                xml.WriteAttributeString( "next", Next[0].ToString()+","+Next[1].ToString() );
+            }
+            else
+            {
+                xml.WriteAttributeString( "type", "leaf" );
+                xml.WriteAttributeString( "format", "csv" );
+
+                for( Int32 i = 0; i < Output.Length; ++i )
+                {
+                    xml.WriteValue( Output[i] );
+                    if( i != Output.Length - 1 )
+                    {
+                        xml.WriteString( "," );
+                    }
+                }
+            }
+
+            xml.WriteEndElement();
+
+            return xml;
+        }
+
     }
 }
+

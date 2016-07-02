@@ -21,7 +21,7 @@ namespace ignisilva
 
             string[] extensions = { @".jpg", @".jpeg", @".png", @".bmp", @".tiff"/*, @".psd"*/ };
 
-            int maxImageDimention = 1024;
+            int maxImageDimention = -1024;
             int HOG_block_size = 8;
             int HOG_norm_size = 2;
 
@@ -151,10 +151,12 @@ namespace ignisilva
                 binGradients = Hog.NormalizeBinnedGradients2( binGradients, new Size( HOG_norm_size, HOG_norm_size ) );
 
                 Bitmap backdropImage = ImageFunctions.MakeGrayscale3( image );
-                backdropImage = ImageFunctions.ImageKernal( backdropImage, new float[,] { { 0.0f } } );
+                Bitmap darkenedBackdropImage = ImageFunctions.ImageKernal( backdropImage, new float[,] { { 0.0f } } );
 
-                Bitmap hogOutput = Hog.BinGradientsToBitmap( binGradients, hogBinSize, backdropImage );
-                //hogOutput.Save( outputFolder + file + "_104_hogV.jpg", jpgCodec, jpgQuality );
+                Bitmap hogOutput = Hog.BinGradientsToBitmap( binGradients, hogBinSize, darkenedBackdropImage );
+
+                hogOutput = ImageFunctions.AddImages( hogOutput, ImageFunctions.ImageKernal( image, new float[,] { { 0.5f } } ) );
+
                 hogOutput.Save( outputFolder + fileinfo.Name + "_" + itts + "04_hogV.png" );
             }
 

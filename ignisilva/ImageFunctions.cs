@@ -247,18 +247,56 @@ namespace ignisilva
             {
                 for( Int32 y = 0; y < outputSize.Height; ++y )
                 {
+                    Int32 ipd1 = GetPixelIndex( x, y, input1.Width, numColors1 );
+                    Int32 ipd2 = GetPixelIndex( x, y, input2.Width, numColors2 );
+                    Int32 opd0 = GetPixelIndex( x, y, outputSize.Width, numColors );
                     for( Int32 color = 0; color < numColors; ++color )
                     {
-                        int c1 = imageData1[GetPixelIndex( x, y, input1.Width, numColors1 ) + color];
-                        int c2 = imageData2[GetPixelIndex( x, y, input2.Width, numColors2 ) + color];
-                        outputData[GetPixelIndex( x, y, outputSize.Width, numColors ) + color] = (byte)Func.Clamp( (int)c1 + (int)c2, 0, 255 );
+                        int c1 = imageData1[ipd1 + color];
+                        int c2 = imageData2[ipd2 + color];
+                        outputData[opd0 + color] = (byte)Func.Clamp( (int)c1 + (int)c2, 0, 255 );
                     }
                 }
             }
 
-            // TODO: finish implementation
+            PixelFormat pixelFormat = ( numColors1 < numColors2 ) ? input1.PixelFormat : input2.PixelFormat;
+            
+            return GenerateImageFromData( outputSize, outputData, pixelFormat );
+        }
 
-            return null;
+        public static Bitmap MultiplyImages( Bitmap input1, Bitmap input2 )
+        {
+            Size outputSize = new Size( Math.Min( input1.Width, input2.Width ), Math.Min( input1.Height, input2.Height ) );
+
+            byte[] imageData1 = ExtractImageData( input1 );
+            byte[] imageData2 = ExtractImageData( input2 );
+
+            int numColors1 = BytesPerPixelIn( input1 );
+            int numColors2 = BytesPerPixelIn( input2 );
+
+            int numColors = Math.Min( numColors1, numColors2 );
+
+            byte[] outputData = new byte[imageData1.Length];
+
+            for( Int32 x = 0; x < outputSize.Width; ++x )
+            {
+                for( Int32 y = 0; y < outputSize.Height; ++y )
+                {
+                    Int32 ipd1 = GetPixelIndex( x, y, input1.Width, numColors1 );
+                    Int32 ipd2 = GetPixelIndex( x, y, input2.Width, numColors2 );
+                    Int32 opd0 = GetPixelIndex( x, y, outputSize.Width, numColors );
+                    for( Int32 color = 0; color < numColors; ++color )
+                    {
+                        float c1 = imageData1[ipd1 + color] / 255.0f;
+                        float c2 = imageData2[ipd2 + color] / 255.0f;
+                        outputData[opd0 + color] = (byte)Func.Clamp( (c1 * c2)*255.0f, 0.0f, 255.0f );
+                    }
+                }
+            }
+
+            PixelFormat pixelFormat = ( numColors1 < numColors2 ) ? input1.PixelFormat : input2.PixelFormat;
+
+            return GenerateImageFromData( outputSize, outputData, pixelFormat );
         }
 
         // TODO: make this function select actual average colors instead of most common colors
@@ -438,6 +476,22 @@ namespace ignisilva
             Marshal.Copy( dataRegion.Scan0, output, 0, output.Length );
 
             input.UnlockBits( dataRegion );
+
+            return output;
+        }
+
+        public static Bitmap GenerateImageFromData( Size size, byte[] data, PixelFormat pixelFormat )
+        {
+            Bitmap output = new Bitmap( size.Width, size.Height, pixelFormat );
+
+            Rectangle rect = new Rectangle( 0, 0, size.Width, size.Height );
+
+            BitmapData outputDataRegion = output.LockBits( rect, ImageLockMode.WriteOnly, pixelFormat );
+
+            //Copy the buffer to image
+            Marshal.Copy( data, 0, outputDataRegion.Scan0, data.Length );
+
+            output.UnlockBits( outputDataRegion );
 
             return output;
         }
