@@ -27,20 +27,27 @@ namespace ignisilva
             }
 
             Random random = new Random();
-            
 
-            for( int i = 0; i < 100; ++i  )
+            DecisionForest forest = new DecisionForest( 2, 3 );
+            
+            for( int i = 0; i < 50; ++i  )
             {
-                DecisionForestTesImage( random, i*i+1 ).Save( outputFolder + "____test" + i.ToString("D4") + ".png" );
+                while( forest.NumTrees < i*i+1 )
+                {
+                    forest.AddTree( RandomTestTree( random ) );
+                }
+                DecisionForestTestImage( random, forest ).Save( outputFolder + "____test" + i.ToString("D4") + ".png" );
             }
+
+            TestXmlWriter( outputFolder + @"forest.xml", forest );
 
             Console.WriteLine( "Press [Return] to exit ..." );
             Console.ReadLine();
         }
 
-        static Bitmap DecisionForestTesImage( Random random, int n )
+        static Bitmap DecisionForestTestImage( Random random, DecisionForest forest )
         {
-            DecisionForest forest = RandomTestForest( random, n );
+            //DecisionForest forest = RandomTestForest( random, n );
 
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
@@ -59,7 +66,7 @@ namespace ignisilva
                 for( Int32 x = 0; x < imageTestSize.Height; ++x )
                 {
                     inputs[0] = (byte)Func.Clamp( x, 0, 255 );
-                    byte[] outputs = forest.Decide( inputs );
+                    byte[] outputs = forest.DecideR( inputs, Math.Max( Math.Min( (int)Math.Sqrt(forest.NumTrees), forest.NumTrees ), 1 ), random );
                     int pixelIndex = ImageFunctions.GetPixelIndex( x, y, imageTestSize.Width, 3 );
 
                     if( count++ % 100 == 0 )
@@ -104,18 +111,18 @@ namespace ignisilva
         static DecisionTree RandomTestTree( Random random )
         {
             DecisionTree tree = new DecisionTree( 2, 3 );
-            bool n1 = random.Next( 1 ) == 1 ? true : false;
+            bool n1 = random.Next( 2 ) == 0 ? true : false;
             tree.AddNode( new DecisionNode( 0, n1 ? 1 : 0, random.Next( 256 ), 1, 2 ) );
             tree.AddNode( new DecisionNode( 1, n1 ? 0 : 1, random.Next( 256 ), 3, 4 ) );
             tree.AddNode( new DecisionNode( 2, n1 ? 0 : 1, random.Next( 256 ), 5, 6 ) );
-            tree.AddNode( new DecisionNode( 3, new byte[] { 255, 0, 0 } ) );
-            tree.AddNode( new DecisionNode( 4, new byte[] { 0, 255, 0 } ) );
-            tree.AddNode( new DecisionNode( 5, new byte[] { 0, 0, 255 } ) );
-            tree.AddNode( new DecisionNode( 6, new byte[] { 0, 0, 0 } ) );
+            tree.AddNode( new DecisionNode( n1 ? 3 : 3, new byte[] { 255,   0,   0 } ) ); // blue
+            tree.AddNode( new DecisionNode( n1 ? 5 : 4, new byte[] {   0, 255,   0 } ) ); // green
+            tree.AddNode( new DecisionNode( n1 ? 4 : 5, new byte[] {   0,   0, 255 } ) ); // red
+            tree.AddNode( new DecisionNode( n1 ? 6 : 6, new byte[] {   0,   0,   0 } ) ); // black
             return tree;
         }
 
-        static void TestXmlWriter( DecisionForest forest )
+        static void TestXmlWriter( string filename, DecisionForest forest )
         {
             XmlWriter writer = null;
 
@@ -125,7 +132,7 @@ namespace ignisilva
                 xmlSettings.Indent = true;
                 xmlSettings.IndentChars = "\t";
                 xmlSettings.OmitXmlDeclaration = true;
-                writer = XmlWriter.Create( Console.Out, xmlSettings );
+                writer = XmlWriter.Create( filename/*Console.Out*/, xmlSettings );
 
                 writer.WriteStartElement( "SampleData" );
 

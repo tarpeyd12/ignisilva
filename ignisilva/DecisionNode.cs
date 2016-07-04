@@ -69,6 +69,8 @@ namespace ignisilva
 
         public XmlWriter WriteXml( XmlWriter xml )
         {
+            bool base64 = !false;
+
             xml.WriteStartElement( "node" );
 
             xml.WriteAttributeString( "id", ID.ToString() );
@@ -78,21 +80,13 @@ namespace ignisilva
                 xml.WriteAttributeString( "type", "node" );
                 xml.WriteAttributeString( "split_index", SplitIndex.ToString() );
                 xml.WriteAttributeString( "split_value", SplitValue.ToString() );
-                xml.WriteAttributeString( "next", Next[0].ToString()+","+Next[1].ToString() );
+                xml.WriteAttributeString( "next", Next[0].ToString() + "," + Next[1].ToString() );
             }
             else
             {
                 xml.WriteAttributeString( "type", "leaf" );
-                xml.WriteAttributeString( "format", "csv" );
-
-                for( Int32 i = 0; i < Output.Length; ++i )
-                {
-                    xml.WriteValue( Output[i] );
-                    if( i != Output.Length - 1 )
-                    {
-                        xml.WriteString( "," );
-                    }
-                }
+                xml.WriteAttributeString( "format", base64 ? "b64" : "csv" );
+                XmlHelper.WritebyteString( xml, Output, base64 );
             }
 
             xml.WriteEndElement();

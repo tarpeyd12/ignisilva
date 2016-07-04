@@ -9,8 +9,10 @@ namespace ignisilva
 {
     class DecisionForest : IXmlWritable
     {
-        public int NumInputs { get; }
-        public int NumOutputs { get; }
+        public Int32 NumInputs { get; }
+        public Int32 NumOutputs { get; }
+
+        public Int32 NumTrees { get { return forest.Count; } }
 
         private List<DecisionTree> forest;
 
@@ -63,6 +65,52 @@ namespace ignisilva
             for( Int32 i = 0; i < NumOutputs; ++i )
             {
                 output[i] = (byte)Func.Clamp( ((double)sums[i] / (double)forest.Count), 0.0f, 255.0f );
+            }
+
+            return output;
+        }
+
+        public byte[] DecideR( byte[] input, Int32 Num, Random random )
+        {
+            if( forest.Count == 0 )
+            {
+                return null;
+            }
+
+            if( Num >= NumTrees  )
+            {
+                return Decide( input );
+            }
+
+            Int32[] sums = new Int32[NumOutputs];
+
+            Int32[] indexes = new Int32[Num];
+            for( int i = 0; i < indexes.Length; ++i )
+            {
+                indexes[i] = random.Next( NumTrees );
+            }
+
+            foreach( Int32 treeIndex in indexes )
+            {
+                DecisionTree tree = forest[treeIndex];
+                byte[] result = tree.Decide( input );
+
+                if( result == null )
+                {
+                    continue;
+                }
+
+                for( Int32 i = 0; i < NumOutputs; ++i )
+                {
+                    sums[i] += result[i];
+                }
+            }
+
+            byte[] output = new byte[NumOutputs];
+
+            for( Int32 i = 0; i < NumOutputs; ++i )
+            {
+                output[i] = (byte)Func.Clamp( ( (double)sums[i] / (double)indexes.Length ), 0.0f, 255.0f );
             }
 
             return output;

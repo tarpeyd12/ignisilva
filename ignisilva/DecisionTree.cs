@@ -10,8 +10,8 @@ namespace ignisilva
     
     class DecisionTree : IXmlWritable
     {
-        public int NumInputs  { get; }
-        public int NumOutputs { get; }
+        public Int32 NumInputs  { get; }
+        public Int32 NumOutputs { get; }
 
         private Dictionary<Int32,DecisionNode> tree;
         private DecisionNode[] flatTree;
@@ -34,7 +34,11 @@ namespace ignisilva
             }
 
             tree.Add( node.ID, node );
-            flatTree = null;
+
+            if( flatTree != null )
+            {
+                flatTree = null;
+            }
 
             return true;
         }
