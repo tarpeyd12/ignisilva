@@ -41,6 +41,28 @@ namespace ignisilva
 
             TestXmlWriter( outputFolder + @"forest.xml", forest );
 
+            SampleDataSet sampleSet = new SampleDataSet( 2, 3 );
+
+            for( Int32 i = 0; i < 100000; ++i )
+            {
+                byte[] input = new byte[2];
+                byte[] output = new byte[3];
+
+                for( int c = 0; c < input.Length; ++c )
+                {
+                    input[c] = (byte)random.Next( 256 );
+                }
+                for( int c = 0; c < output.Length; ++c )
+                {
+                    output[c] = (byte)random.Next( 5 );
+                }
+                SampleData sample = new SampleData( input, output );
+
+                sampleSet.AddData( sample );
+            }
+
+            sampleSet.WriteXml( CreateXmlWriter( outputFolder + @"dataset.xml" ) );
+
             Console.WriteLine( "Press [Return] to exit ..." );
             Console.ReadLine();
         }
@@ -122,17 +144,22 @@ namespace ignisilva
             return tree;
         }
 
+        static XmlWriter CreateXmlWriter( string filename )
+        {
+            XmlWriterSettings xmlSettings = new XmlWriterSettings();
+            xmlSettings.Indent = true;
+            xmlSettings.IndentChars = "\t";
+            xmlSettings.OmitXmlDeclaration = true;
+            return XmlWriter.Create( filename/*Console.Out*/, xmlSettings );
+        }
+
         static void TestXmlWriter( string filename, DecisionForest forest )
         {
             XmlWriter writer = null;
 
             try
             {
-                XmlWriterSettings xmlSettings = new XmlWriterSettings();
-                xmlSettings.Indent = true;
-                xmlSettings.IndentChars = "\t";
-                xmlSettings.OmitXmlDeclaration = true;
-                writer = XmlWriter.Create( filename/*Console.Out*/, xmlSettings );
+                writer = CreateXmlWriter( filename );
 
                 writer.WriteStartElement( "SampleData" );
 

@@ -17,7 +17,7 @@ namespace ignisilva
         private List<SampleData> dataSet;
         private Dictionary<UInt32, List<SampleData>> uniqueOutputSets;
 
-        SampleDataSet( Int32 numInputs, Int32 numOutputs )
+        public SampleDataSet( Int32 numInputs, Int32 numOutputs )
         {
             NumInputs = numInputs;
             NumOutputs = numOutputs;
@@ -59,18 +59,18 @@ namespace ignisilva
             xml.WriteAttributeString( "outputs", NumOutputs.ToString() );
 
             // write similar outputs together
-            /*foreach( KeyValuePair<UInt32, List<SampleData>> listPair in uniqueOutputSets )
+            foreach( KeyValuePair<UInt32, List<SampleData>> listPair in uniqueOutputSets )
             {
                 foreach( SampleData sampleData in listPair.Value )
                 {
                     sampleData.WriteXml( xml );
                 }
-            }*/
+            }
 
-            foreach( SampleData sampleData in dataSet )
+            /*foreach( SampleData sampleData in dataSet )
             {
                 sampleData.WriteXml( xml );
-            }
+            }*/
 
             xml.WriteEndElement();
             return xml;
