@@ -79,10 +79,9 @@ namespace ignisilva
             xml.WriteStartElement( "tree" );
             xml.WriteAttributeString( "inputs", NumInputs.ToString() );
             xml.WriteAttributeString( "outputs", NumOutputs.ToString() );
-            foreach( KeyValuePair<int, DecisionNode> keyNode in tree.ToList() ) 
+            foreach( KeyValuePair<Int32, DecisionNode> keyNode in tree.ToList() ) 
             {
-                DecisionNode node = keyNode.Value;
-                node.WriteXml( xml );
+                keyNode.Value.WriteXml( xml );
             }
             xml.WriteEndElement();
             return xml;

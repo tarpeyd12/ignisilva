@@ -84,11 +84,7 @@ namespace ignisilva
 
             Int32[] sums = new Int32[NumOutputs];
 
-            Int32[] indexes = new Int32[Num];
-            for( int i = 0; i < indexes.Length; ++i )
-            {
-                indexes[i] = random.Next( NumTrees );
-            }
+            List<Int32> indexes = Func.UniqueRandomNumberRange( Num, 0, NumTrees, random );
 
             foreach( Int32 treeIndex in indexes )
             {
@@ -110,7 +106,46 @@ namespace ignisilva
 
             for( Int32 i = 0; i < NumOutputs; ++i )
             {
-                output[i] = (byte)Func.Clamp( ( (double)sums[i] / (double)indexes.Length ), 0.0f, 255.0f );
+                output[i] = (byte)Func.Clamp( ( (double)sums[i] / (double)indexes.Count ), 0.0f, 255.0f );
+            }
+
+            return output;
+        }
+
+        public byte[] DecideRN( byte[] input, Int32 Num, Int32 Repetitions, Random random )
+        {
+            if( forest.Count == 0 )
+            {
+                return null;
+            }
+
+            if( Num >= NumTrees )
+            {
+                return Decide( input );
+            }
+
+            if( Repetitions <= 1 )
+            {
+                return DecideR( input, Num, random );
+            }
+
+            Int32[] sums = new Int32[NumOutputs];
+
+            for( Int32 i = 0; i < Repetitions; ++i )
+            {
+                byte[] result = DecideR( input, Num, random );
+
+                for( Int32 c = 0; c < NumOutputs; ++c )
+                {
+                    sums[c] += result[c];
+                }
+            }
+
+            byte[] output = new byte[NumOutputs];
+
+            for( Int32 i = 0; i < NumOutputs; ++i )
+            {
+                output[i] = (byte)Func.Clamp( ( (double)sums[i] / (double)Repetitions ), 0.0f, 255.0f );
             }
 
             return output;

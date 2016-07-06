@@ -444,7 +444,7 @@ namespace ignisilva
             return ( ( y * width ) + x ) * depth;
         }
 
-        private static float ColorValueDistance( byte[] a, byte[] b )
+        public static float ColorValueDistance( byte[] a, byte[] b )
         {
             float sum = 0.0f;
 

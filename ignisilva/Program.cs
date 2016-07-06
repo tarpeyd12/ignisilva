@@ -43,7 +43,7 @@ namespace ignisilva
 
             SampleDataSet sampleSet = new SampleDataSet( 2, 3 );
 
-            for( Int32 i = 0; i < 100000; ++i )
+            for( Int32 i = 0; i < 1000000; ++i )
             {
                 byte[] input = new byte[2];
                 byte[] output = new byte[3];
@@ -52,16 +52,17 @@ namespace ignisilva
                 {
                     input[c] = (byte)random.Next( 256 );
                 }
-                for( int c = 0; c < output.Length; ++c )
-                {
-                    output[c] = (byte)random.Next( 5 );
-                }
+                output[2] = (byte)( ( input[0] / 8 ) * 8 ); // red
+                output[1] = (byte)( ( input[1] / 8 ) * 8 ); // green
+                output[0] = (byte)Func.Clamp( ImageFunctions.ColorValueDistance( new byte[] { 0, 0 }, input ) * 255.0f, 0.0f, 255.0f ); // blue
                 SampleData sample = new SampleData( input, output );
 
                 sampleSet.AddData( sample );
             }
-
-            sampleSet.WriteXml( CreateXmlWriter( outputFolder + @"dataset.xml" ) );
+            XmlWriter xml = CreateXmlWriter( outputFolder + @"dataset.xml" );
+            sampleSet.RandomSubSet( (Int32)Math.Sqrt( sampleSet.NumSamples ) ).WriteXml( xml );
+            xml.Flush();
+            xml.Close();
 
             Console.WriteLine( "Press [Return] to exit ..." );
             Console.ReadLine();
@@ -89,6 +90,8 @@ namespace ignisilva
                 {
                     inputs[0] = (byte)Func.Clamp( x, 0, 255 );
                     byte[] outputs = forest.DecideR( inputs, Math.Max( Math.Min( (int)Math.Sqrt(forest.NumTrees), forest.NumTrees ), 1 ), random );
+                    //byte[] outputs = forest.DecideRN( inputs, 100, 5, random );
+                    //byte[] outputs = forest.Decide( inputs );
                     int pixelIndex = ImageFunctions.GetPixelIndex( x, y, imageTestSize.Width, 3 );
 
                     if( count++ % 100 == 0 )
@@ -161,11 +164,11 @@ namespace ignisilva
             {
                 writer = CreateXmlWriter( filename );
 
-                writer.WriteStartElement( "SampleData" );
+                //writer.WriteStartElement( "SampleData" );
 
                 forest.WriteXml( writer );
 
-                writer.WriteEndElement();
+                //writer.WriteEndElement();
 
                 writer.Flush();
             }
