@@ -30,7 +30,7 @@ namespace ignisilva
 
             DecisionForest forest = new DecisionForest( 2, 3 );
             
-            for( int i = 0; i < 50; ++i  )
+            for( int i = 0; i < 25; ++i  )
             {
                 while( forest.NumTrees < i*i+1 )
                 {
@@ -43,6 +43,7 @@ namespace ignisilva
 
             SampleDataSet sampleSet = new SampleDataSet( 2, 3 );
 
+            Int32 _subsets = 128;
             for( Int32 i = 0; i < 1000000; ++i )
             {
                 byte[] input = new byte[2];
@@ -52,9 +53,9 @@ namespace ignisilva
                 {
                     input[c] = (byte)random.Next( 256 );
                 }
-                output[2] = (byte)( ( input[0] / 8 ) * 8 ); // red
-                output[1] = (byte)( ( input[1] / 8 ) * 8 ); // green
-                output[0] = (byte)Func.Clamp( ImageFunctions.ColorValueDistance( new byte[] { 0, 0 }, input ) * 255.0f, 0.0f, 255.0f ); // blue
+                output[2] = (byte)( ( input[0] / _subsets ) * _subsets ); // red
+                output[1] = (byte)( ( input[1] / _subsets ) * _subsets ); // green
+                output[0] = (byte)( ( Func.Clamp( ImageFunctions.ColorValueDistance( new byte[] { 0, 0 }, input ) * 255.0f, 0.0f, 255.0f ) / _subsets) * _subsets); // blue
                 SampleData sample = new SampleData( input, output );
 
                 sampleSet.AddData( sample );
@@ -64,6 +65,27 @@ namespace ignisilva
             //sampleSet.SubSetByOutput( 0 ).WriteXml( xml );
             xml.Flush();
             xml.Close();
+
+            using( StreamWriter file = new StreamWriter( outputFolder + @"outhisto.txt" ) )
+            {
+
+                for( Int32 i = 0; i < sampleSet.NumInputs; ++i )
+                {
+                    file.Write( "({0})<", i );
+                    file.WriteLine( "" );
+                    Int32[,] outhisto = sampleSet.GetOutputHistogram( i );
+
+                    for( Int32 x = 0; x < outhisto.GetLength( 1 ); ++x )
+                    {
+                        for( Int32 y = 0; y < outhisto.GetLength( 0 ); ++y )
+                        {
+                            file.Write( "{0:X4},", outhisto[y, x] );
+                        }
+                        file.WriteLine( "" );
+                    }
+                    file.WriteLine( ">" );
+                }
+            }
 
             Console.WriteLine( "Press [Return] to exit ..." );
             Console.ReadLine();
