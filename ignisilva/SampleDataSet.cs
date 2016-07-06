@@ -94,7 +94,20 @@ namespace ignisilva
             // then convert to SampleDataSet
             return new SampleDataSet( NumInputs, NumOutputs, uniqueOutputSets[uniqueOutputSets.ToList()[OutputID].Key] );
         }
-        
+
+        public Int32 GetNumSetsByUniqueOutput( Int32 OutputID )
+        {
+            if( OutputID >= NumUniqueOutputs )
+            {
+                return 0;
+            }
+
+            // turn the sequential OutputID into the hashed code for the unique outputs key, and get that list
+            // then get the number of enteries
+            return uniqueOutputSets[uniqueOutputSets.ToList()[OutputID].Key].Count;
+        }
+
+
         public XmlWriter WriteXml( XmlWriter xml )
         {
             xml.WriteStartElement( "sample_set" );

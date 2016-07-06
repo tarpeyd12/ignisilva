@@ -61,6 +61,7 @@ namespace ignisilva
             }
             XmlWriter xml = CreateXmlWriter( outputFolder + @"dataset.xml" );
             sampleSet.RandomSubSet( (Int32)Math.Sqrt( sampleSet.NumSamples ) ).WriteXml( xml );
+            //sampleSet.SubSetByOutput( 0 ).WriteXml( xml );
             xml.Flush();
             xml.Close();
 
