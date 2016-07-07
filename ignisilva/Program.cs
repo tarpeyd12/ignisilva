@@ -16,6 +16,8 @@ namespace ignisilva
     {
         static void Main( string[] args )
         {
+            string xmlEncoding = "b64";
+
             string folder = @"../../../images/";
             string outputFolder = @"../../../images/out/";
 
@@ -30,20 +32,21 @@ namespace ignisilva
 
             DecisionForest forest = new DecisionForest( 2, 3 );
             
-            for( int i = 0; i < 25; ++i  )
+            for( int i = 0; i < 300; ++i  )
             {
                 while( forest.NumTrees < i*i+1 )
                 {
                     forest.AddTree( RandomTestTree( random ) );
                 }
+                Console.Write( "{0}\n", i );
                 DecisionForestTestImage( random, forest ).Save( outputFolder + "____test" + i.ToString("D4") + ".png" );
             }
 
-            TestXmlWriter( outputFolder + @"forest.xml", forest );
+            TestXmlWriter( outputFolder + @"forest.xml", forest, xmlEncoding );
 
             SampleDataSet sampleSet = new SampleDataSet( 2, 3 );
 
-            Int32 _subsets = 128;
+            Int32 _subsets = 256/2;
             for( Int32 i = 0; i < 1000000; ++i )
             {
                 byte[] input = new byte[2];
@@ -61,7 +64,7 @@ namespace ignisilva
                 sampleSet.AddData( sample );
             }
             XmlWriter xml = CreateXmlWriter( outputFolder + @"dataset.xml" );
-            sampleSet.RandomSubSet( (Int32)Math.Sqrt( sampleSet.NumSamples ) ).WriteXml( xml );
+            sampleSet.RandomSubSet( (Int32)Math.Sqrt( sampleSet.NumSamples ) ).WriteXml( xml, xmlEncoding );
             //sampleSet.SubSetByOutput( 0 ).WriteXml( xml );
             xml.Flush();
             xml.Close();
@@ -77,9 +80,12 @@ namespace ignisilva
 
                     for( Int32 x = 0; x < outhisto.GetLength( 1 ); ++x )
                     {
+                        //file.Write( "[{0}]", Convert.ToBase64String( sampleSet.GetUniqueOutput( x ) ) );
+                        file.Write( "[{0}]", Func.ToCSV( sampleSet.GetUniqueOutput( x ) ) );
                         for( Int32 y = 0; y < outhisto.GetLength( 0 ); ++y )
                         {
-                            file.Write( "{0:X4},", outhisto[y, x] );
+                            //file.Write( "{0:X3},", outhisto[y, x] );
+                            file.Write( "{0}", outhisto[y, x] == 0 ? "." : "#" );
                         }
                         file.WriteLine( "" );
                     }
@@ -88,7 +94,7 @@ namespace ignisilva
             }
 
             Console.WriteLine( "Press [Return] to exit ..." );
-            Console.ReadLine();
+            //Console.ReadLine();
         }
 
         static Bitmap DecisionForestTestImage( Random random, DecisionForest forest )
@@ -112,8 +118,8 @@ namespace ignisilva
                 for( Int32 x = 0; x < imageTestSize.Height; ++x )
                 {
                     inputs[0] = (byte)Func.Clamp( x, 0, 255 );
-                    byte[] outputs = forest.DecideR( inputs, Math.Max( Math.Min( (int)Math.Sqrt(forest.NumTrees), forest.NumTrees ), 1 ), random );
-                    //byte[] outputs = forest.DecideRN( inputs, 100, 5, random );
+                    //byte[] outputs = forest.DecideR( inputs, Math.Max( Math.Min( (int)Math.Sqrt(forest.NumTrees), forest.NumTrees ), 1 ), random );
+                    byte[] outputs = forest.DecideRN( inputs, 100, 5, random );
                     //byte[] outputs = forest.Decide( inputs );
                     int pixelIndex = ImageFunctions.GetPixelIndex( x, y, imageTestSize.Width, 3 );
 
@@ -179,7 +185,7 @@ namespace ignisilva
             return XmlWriter.Create( filename/*Console.Out*/, xmlSettings );
         }
 
-        static void TestXmlWriter( string filename, DecisionForest forest )
+        static void TestXmlWriter( string filename, DecisionForest forest, string xmlEncoding = "b64" )
         {
             XmlWriter writer = null;
 
@@ -189,7 +195,7 @@ namespace ignisilva
 
                 //writer.WriteStartElement( "SampleData" );
 
-                forest.WriteXml( writer );
+                forest.WriteXml( writer, xmlEncoding );
 
                 //writer.WriteEndElement();
 

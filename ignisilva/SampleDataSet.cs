@@ -83,13 +83,13 @@ namespace ignisilva
             return subSampleSet;
         }
 
-        private UInt32 GetOutputHashCodeFromFlatOutputID( Int32 OutputID  )
+        public UInt32 GetOutputHashCodeFromFlatOutputID( Int32 OutputID  )
         {
             return uniqueOutputSets.ToList()[OutputID].Key;
         }
 
         // TODO: make this faster, could be extreemly slow
-        private Int32 GetFlatOutputIDFromOutputHashCode( UInt32 OutputHash )
+        public Int32 GetFlatOutputIDFromOutputHashCode( UInt32 OutputHash )
         {
             for( Int32 i = 0; i < NumUniqueOutputs; ++i )
             {
@@ -100,6 +100,11 @@ namespace ignisilva
             }
             // error not found
             return -1;
+        }
+
+        public byte[] GetUniqueOutput( Int32 OutputID )
+        {
+            return uniqueOutputSets.ToList()[OutputID].Value[0].Output;
         }
 
         public SampleDataSet SubSetByOutput( Int32 OutputID )
@@ -149,7 +154,7 @@ namespace ignisilva
             return output;
         }
 
-        public XmlWriter WriteXml( XmlWriter xml )
+        public XmlWriter WriteXml( XmlWriter xml, string fmt = "b64" )
         {
             xml.WriteStartElement( "sample_set" );
             xml.WriteAttributeString( "num", NumSamples.ToString() );
@@ -161,7 +166,7 @@ namespace ignisilva
             {
                 foreach( SampleData sampleData in listPair.Value )
                 {
-                    sampleData.WriteXml( xml );
+                    sampleData.WriteXml( xml, fmt );
                 }
             }
 

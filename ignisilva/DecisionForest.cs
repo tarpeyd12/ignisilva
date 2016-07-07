@@ -119,7 +119,7 @@ namespace ignisilva
                 return null;
             }
 
-            if( Num >= NumTrees )
+            if( Num * Repetitions >= NumTrees )
             {
                 return Decide( input );
             }
@@ -151,7 +151,7 @@ namespace ignisilva
             return output;
         }
 
-        public XmlWriter WriteXml( XmlWriter xml )
+        public XmlWriter WriteXml( XmlWriter xml, string fmt = "b64" )
         {
             xml.WriteStartElement( "forest" );
 
@@ -161,7 +161,7 @@ namespace ignisilva
 
             foreach( DecisionTree tree in forest )
             {
-                tree.WriteXml( xml );
+                tree.WriteXml( xml, fmt );
             }
 
             xml.WriteEndElement();

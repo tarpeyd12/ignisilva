@@ -29,18 +29,16 @@ namespace ignisilva
             InputHash = hasher.Hash( Input );
         }
 
-        public XmlWriter WriteXml( XmlWriter xml )
+        public XmlWriter WriteXml( XmlWriter xml, string fmt = "b64" )
         {
-            bool base64 = !false;
-
             xml.WriteStartElement( "sample" );
             xml.WriteStartElement( "input" ); 
-            xml.WriteAttributeString( "format", base64 ? "b64" : "csv" );
-            XmlHelper.WritebyteString( xml, Input, base64 );
+            xml.WriteAttributeString( "format", fmt );
+            XmlHelper.WriteByteString( xml, Input, fmt );
             xml.WriteEndElement();
             xml.WriteStartElement( "output" );
-            xml.WriteAttributeString( "format", base64 ? "b64" : "csv" );
-            XmlHelper.WritebyteString( xml, Output, base64 );
+            xml.WriteAttributeString( "format", fmt );
+            XmlHelper.WriteByteString( xml, Output, fmt );
             xml.WriteEndElement();
             xml.WriteEndElement();
             return xml;

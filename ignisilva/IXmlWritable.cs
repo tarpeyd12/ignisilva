@@ -9,6 +9,6 @@ namespace ignisilva
 {
     interface IXmlWritable
     {
-        XmlWriter WriteXml( XmlWriter xml );
+        XmlWriter WriteXml( XmlWriter xml, string fmt = "b64" );
     }
 }

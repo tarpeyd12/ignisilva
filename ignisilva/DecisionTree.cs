@@ -74,14 +74,14 @@ namespace ignisilva
             return node.Output;
         }
 
-        public XmlWriter WriteXml( XmlWriter xml )
+        public XmlWriter WriteXml( XmlWriter xml, string fmt = "b64" )
         {
             xml.WriteStartElement( "tree" );
             xml.WriteAttributeString( "inputs", NumInputs.ToString() );
             xml.WriteAttributeString( "outputs", NumOutputs.ToString() );
             foreach( KeyValuePair<Int32, DecisionNode> keyNode in tree.ToList() ) 
             {
-                keyNode.Value.WriteXml( xml );
+                keyNode.Value.WriteXml( xml, fmt );
             }
             xml.WriteEndElement();
             return xml;

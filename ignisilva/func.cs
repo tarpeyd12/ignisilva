@@ -10,9 +10,9 @@ namespace ignisilva
     {
         public static T Clamp<T>( T val, T min, T max ) where T : IComparable<T>
         {
-            if     ( val.CompareTo( min ) < 0 ) return min;
-            else if( val.CompareTo( max ) > 0 ) return max;
-            else return val;
+            if     ( val.CompareTo( min ) < 0 ) { return min; }
+            else if( val.CompareTo( max ) > 0 ) { return max; }
+            else                                { return val; }
         }
 
         public static List<Int32> UniqueRandomNumberRange( Int32 numberOfOutputs, Int32 Min, Int32 Max, Random random )
@@ -25,17 +25,9 @@ namespace ignisilva
                 return new List<Int32>( Enumerable.Range( Min, Max-Min ).ToArray() );
             }
 
-            Int32 value;
-
             while( check.Count < numberOfOutputs )
             {
-                do
-                {
-                    value = random.Next( Min, Max );
-                }
-                while( check.Contains( value ) );
-                
-                check.Add( value );
+                while( !check.Add( random.Next( Min, Max ) ) );
             }
 
             List<Int32> output = check.ToList();
@@ -44,5 +36,21 @@ namespace ignisilva
 
             return output;
         }
+        
+        public static string ToCSV( byte[] data )
+        {
+            string output = "";
+
+            for( Int32 i = 0; i < data.Length; ++i )
+            {
+                output += data[i].ToString( "D3" );
+                if( i < data.Length-1 )
+                {
+                    output += ",";
+                }
+            }
+            return output;
+        }
+
     }
 }
