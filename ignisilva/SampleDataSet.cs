@@ -83,6 +83,20 @@ namespace ignisilva
             return subSampleSet;
         }
 
+        public SampleDataSet[] SplitSet( Int32 splitIndex, byte splitValue )
+        {
+            SampleDataSet[] subSampleSet = new SampleDataSet[2];
+            subSampleSet[0] = new SampleDataSet( NumInputs, NumOutputs );
+            subSampleSet[1] = new SampleDataSet( NumInputs, NumOutputs );
+
+            foreach( SampleData sample in dataSet )
+            {
+                subSampleSet[sample.Input[splitIndex] < splitValue ? 0 : 1].AddData( sample );
+            }
+
+            return subSampleSet;
+        }
+
         public UInt32 GetOutputHashCodeFromFlatOutputID( Int32 OutputID  )
         {
             return uniqueOutputSets.ToList()[OutputID].Key;
@@ -131,7 +145,7 @@ namespace ignisilva
             return uniqueOutputSets[GetOutputHashCodeFromFlatOutputID( OutputID )].Count;
         }
 
-        public Int32[,] GetOutputHistogram( Int32 InputIndex )
+        public Int32[,] GetInputHistogram( Int32 InputIndex )
         {
             Int32[,] output = new Int32[256,NumUniqueOutputs];
 
@@ -153,6 +167,86 @@ namespace ignisilva
 
             return output;
         }
+
+        public Int32[,,] GetOutputHistogram()
+        {
+            Int32[,,] output = new Int32[NumUniqueOutputs,NumInputs,256];
+
+            for( Int32 i = 0; i < NumUniqueOutputs; ++i )
+            {
+                List<SampleData> samples = uniqueOutputSets.ToList()[i].Value;
+
+                foreach( SampleData sample in samples )
+                {
+                    for( Int32 ix = 0; ix < sample.NumInputs; ++ix )
+                    {
+                        output[i, ix, sample.Input[ix]]++;
+                    }
+                }
+            }
+
+            return output;
+        }
+
+        public Int32[,] GetOutputMinMaxOfInputIndex( Int32 inputIndex )
+        {
+            Int32[,] output = new Int32[NumUniqueOutputs,2];
+
+            for( Int32 i = 0; i < NumUniqueOutputs; ++i )
+            {
+                List<SampleData> samples = uniqueOutputSets.ToList()[i].Value;
+
+                output[i, 0] = output[i, 1] = samples[0].Input[0];
+
+                foreach( SampleData sample in samples )
+                {
+                    if( sample.Input[inputIndex] < output[i, 0] ) { output[i, 0] = sample.Input[inputIndex]; }
+                    if( sample.Input[inputIndex] > output[i, 1] ) { output[i, 1] = sample.Input[inputIndex]; }
+                }
+            }
+
+            return output;
+        }
+
+        public float GetEntropy()
+        {
+            // http://www.saedsayad.com/decision_tree.htm
+
+            Int32[] numSamplesPerOutput = new Int32[NumUniqueOutputs];
+            float a = 0.0f;
+
+            for( int i = 0; i < NumUniqueOutputs; ++i )
+            {
+                numSamplesPerOutput[i] = uniqueOutputSets.ToList()[i].Value.Count;
+                a += (float)numSamplesPerOutput[i] * (float)numSamplesPerOutput[i];
+            }
+            a = (float)Math.Sqrt( a );
+
+            float[] normalizedSPO = new float[NumUniqueOutputs];
+
+            for( int i = 0; i < NumUniqueOutputs; ++i )
+            {
+                normalizedSPO[i] = (float)numSamplesPerOutput[i] / a;
+            }
+
+            float entropyValue = 0.0f;
+
+            // 1.0f for natural entropy bit
+            //  (float)Math.Log( 2.0f ) for shannon
+            // (float)Math.Log( 10.0f ) for hartley
+            float divlog = NumUniqueOutputs;// (float)Math.Log(2.0f);
+
+            for( int i = 0; i < NumUniqueOutputs; ++i )
+            {
+                // I think this will be correct
+                //Console.WriteLine("p_i={0},E()={1}", normalizedSPO[i], -( normalizedSPO[i] * ((float)Math.Log( normalizedSPO[i] )/ divlog ) ) );
+                entropyValue += -( normalizedSPO[i] * ( (float)Math.Log( normalizedSPO[i] ) / divlog ) );
+            }
+
+            return entropyValue;
+        }
+
+
 
         public XmlWriter WriteXml( XmlWriter xml, string fmt = "b64" )
         {

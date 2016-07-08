@@ -77,9 +77,12 @@ namespace ignisilva
         public XmlWriter WriteXml( XmlWriter xml, string fmt = "b64" )
         {
             xml.WriteStartElement( "tree" );
+            xml.WriteAttributeString( "num", tree.Count.ToString() );
             xml.WriteAttributeString( "inputs", NumInputs.ToString() );
             xml.WriteAttributeString( "outputs", NumOutputs.ToString() );
-            foreach( KeyValuePair<Int32, DecisionNode> keyNode in tree.ToList() ) 
+            List< KeyValuePair < Int32, DecisionNode >> nodeList = tree.ToList();
+            nodeList.Sort( delegate ( KeyValuePair<Int32, DecisionNode> n1, KeyValuePair<Int32, DecisionNode> n2 ) { return ( n1.Value.ID.CompareTo( n2.Value.ID ) ); } );
+            foreach( KeyValuePair<Int32, DecisionNode> keyNode in nodeList ) 
             {
                 keyNode.Value.WriteXml( xml, fmt );
             }

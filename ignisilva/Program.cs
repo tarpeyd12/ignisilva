@@ -32,7 +32,7 @@ namespace ignisilva
 
             DecisionForest forest = new DecisionForest( 2, 3 );
             
-            for( int i = 0; i < 300; ++i  )
+            for( int i = 0; i < 25; ++i  )
             {
                 while( forest.NumTrees < i*i+1 )
                 {
@@ -46,7 +46,7 @@ namespace ignisilva
 
             SampleDataSet sampleSet = new SampleDataSet( 2, 3 );
 
-            Int32 _subsets = 256/2;
+            Int32 _subsets = 256/1;
             for( Int32 i = 0; i < 1000000; ++i )
             {
                 byte[] input = new byte[2];
@@ -69,32 +69,80 @@ namespace ignisilva
             xml.Flush();
             xml.Close();
 
+            float entropy1 = sampleSet.GetEntropy();
+            Console.WriteLine( "SampleSetEntropy = {0}.", entropy1 );
+
+            SampleDataSet[] splitSubSets1 = sampleSet.SplitSet( 0, 128 );
+            SampleDataSet[] splitSubSets2 = sampleSet.SplitSet( 1, 128 );
+
+            Console.WriteLine( "SampleSetEntropy(0,128,L) = {0:F4}, {1}", splitSubSets1[0].GetEntropy(), splitSubSets1[0].NumUniqueOutputs );
+            Console.WriteLine( "SampleSetEntropy(0,128,G) = {0:F4}, {1}", splitSubSets1[1].GetEntropy(), splitSubSets1[1].NumUniqueOutputs );
+            Console.WriteLine( "SampleSetEntropy(1,128,L) = {0:F4}, {1}", splitSubSets2[0].GetEntropy(), splitSubSets2[0].NumUniqueOutputs );
+            Console.WriteLine( "SampleSetEntropy(1,128,G) = {0:F4}, {1}", splitSubSets2[1].GetEntropy(), splitSubSets2[1].NumUniqueOutputs );
+
             using( StreamWriter file = new StreamWriter( outputFolder + @"outhisto.txt" ) )
             {
 
+                file.WriteLine("INPUTS[");
                 for( Int32 i = 0; i < sampleSet.NumInputs; ++i )
                 {
                     file.Write( "({0})<", i );
                     file.WriteLine( "" );
-                    Int32[,] outhisto = sampleSet.GetOutputHistogram( i );
+                    Int32[,] inhisto = sampleSet.GetInputHistogram( i );
 
-                    for( Int32 x = 0; x < outhisto.GetLength( 1 ); ++x )
+                    for( Int32 x = 0; x < inhisto.GetLength( 1 ); ++x )
                     {
                         //file.Write( "[{0}]", Convert.ToBase64String( sampleSet.GetUniqueOutput( x ) ) );
                         file.Write( "[{0}]", Func.ToCSV( sampleSet.GetUniqueOutput( x ) ) );
-                        for( Int32 y = 0; y < outhisto.GetLength( 0 ); ++y )
+                        for( Int32 y = 0; y < inhisto.GetLength( 0 ); ++y )
                         {
-                            //file.Write( "{0:X3},", outhisto[y, x] );
-                            file.Write( "{0}", outhisto[y, x] == 0 ? "." : "#" );
+                            //file.Write( "{0:X3},", inhisto[y, x] );
+                            file.Write( "{0}", inhisto[y, x] == 0 ? "." : "#" );
                         }
                         file.WriteLine( "" );
                     }
                     file.WriteLine( ">" );
                 }
+                file.WriteLine( "]" );
+
+                /*Int32[,,] outhisto = sampleSet.GetOutputHistogram();
+
+                for( Int32 i = 0; i < sampleSet.NumInputs; ++i )
+                {
+                    file.Write( "({0})<", i );
+                    file.WriteLine( "" );
+                    for( Int32 x = 0; x < outhisto.GetLength( 2 ); ++x )
+                    {
+                        //file.Write( "[{0}]", Convert.ToBase64String( sampleSet.GetUniqueOutput( x ) ) );
+                        //file.Write( "[{0}]", Func.ToCSV( sampleSet.GetUniqueOutput( x ) ) );
+                        for( Int32 y = 0; y < outhisto.GetLength( 0 ); ++y )
+                        {
+                            file.Write( "{0:X3},", outhisto[y, i, x] );
+                            //file.Write( "{0}", outhisto[y, x] == 0 ? "." : "#" );
+                        }
+                        file.WriteLine( "" );
+                    }
+                    file.WriteLine( ">" );
+                }
+                file.WriteLine( ">" );*/
+                file.WriteLine( "OUTPUTS[" );
+                for( Int32 i = 0; i < sampleSet.NumInputs; ++i )
+                {
+                    file.Write( "({0})<", i );
+                    file.WriteLine( "" );
+                    Int32[,] outminmax = sampleSet.GetOutputMinMaxOfInputIndex(i);
+                    for( Int32 x = 0; x < outminmax.GetLength(0); ++x )
+                    {
+                        file.WriteLine( "[{2}]:{0:D3},{1:D3}", outminmax[x, 0], outminmax[x, 1], Func.ToCSV( sampleSet.GetUniqueOutput( x ) ) );
+                    }
+                }
+                file.WriteLine( "]" );
             }
 
+            GC.Collect();
+
             Console.WriteLine( "Press [Return] to exit ..." );
-            //Console.ReadLine();
+            Console.ReadLine();
         }
 
         static Bitmap DecisionForestTestImage( Random random, DecisionForest forest )
@@ -118,8 +166,9 @@ namespace ignisilva
                 for( Int32 x = 0; x < imageTestSize.Height; ++x )
                 {
                     inputs[0] = (byte)Func.Clamp( x, 0, 255 );
+                    byte[] outputs = forest.DecideR( inputs, 10, random );
                     //byte[] outputs = forest.DecideR( inputs, Math.Max( Math.Min( (int)Math.Sqrt(forest.NumTrees), forest.NumTrees ), 1 ), random );
-                    byte[] outputs = forest.DecideRN( inputs, 100, 5, random );
+                    //byte[] outputs = forest.DecideRN( inputs, 100, 5, random );
                     //byte[] outputs = forest.Decide( inputs );
                     int pixelIndex = ImageFunctions.GetPixelIndex( x, y, imageTestSize.Width, 3 );
 
@@ -169,10 +218,14 @@ namespace ignisilva
             tree.AddNode( new DecisionNode( 0, n1 ? 1 : 0, random.Next( 256 ), 1, 2 ) );
             tree.AddNode( new DecisionNode( 1, n1 ? 0 : 1, random.Next( 256 ), 3, 4 ) );
             tree.AddNode( new DecisionNode( 2, n1 ? 0 : 1, random.Next( 256 ), 5, 6 ) );
-            tree.AddNode( new DecisionNode( n1 ? 3 : 3, new byte[] { 255,   0,   0 } ) ); // blue
+            /*tree.AddNode( new DecisionNode( n1 ? 3 : 3, new byte[] { 255,   0,   0 } ) ); // blue
             tree.AddNode( new DecisionNode( n1 ? 5 : 4, new byte[] {   0, 255,   0 } ) ); // green
             tree.AddNode( new DecisionNode( n1 ? 4 : 5, new byte[] {   0,   0, 255 } ) ); // red
-            tree.AddNode( new DecisionNode( n1 ? 6 : 6, new byte[] {   0,   0,   0 } ) ); // black
+            tree.AddNode( new DecisionNode( n1 ? 6 : 6, new byte[] {   0,   0,   0 } ) ); // black*/
+            tree.AddNode( new DecisionNode( n1 ? 3 : 3, new byte[] { 0, 255, 255 } ) ); // yellow
+            tree.AddNode( new DecisionNode( n1 ? 5 : 4, new byte[] { 128, 0, 128 } ) ); // purple
+            tree.AddNode( new DecisionNode( n1 ? 4 : 5, new byte[] { 0, 69, 255 } ) ); // orangered
+            tree.AddNode( new DecisionNode( n1 ? 6 : 6, new byte[] { 0, 0, 128 } ) ); // maroon
             return tree;
         }
 
