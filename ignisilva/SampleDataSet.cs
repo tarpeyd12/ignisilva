@@ -69,6 +69,21 @@ namespace ignisilva
             return true;
         }
 
+        public bool AddData( SampleDataSet otherDataSet )
+        {
+            if( otherDataSet == null || otherDataSet.NumInputs != NumInputs || otherDataSet.NumOutputs != NumOutputs )
+            {
+                return false;
+            }
+
+            foreach( SampleData sample in otherDataSet.dataSet )
+            {
+                AddData( sample );
+            }
+
+            return true;
+        }
+
         public SampleDataSet RandomSubSet( Int32 Num, Random random = null )
         {
             SampleDataSet subSampleSet = new SampleDataSet( NumInputs, NumOutputs );
@@ -145,7 +160,7 @@ namespace ignisilva
             return uniqueOutputSets[GetOutputHashCodeFromFlatOutputID( OutputID )].Count;
         }
 
-        public Int32[,] GetInputHistogram( Int32 InputIndex )
+        public Int32[,] GetOutputHistogram( Int32 InputIndex )
         {
             Int32[,] output = new Int32[256,NumUniqueOutputs];
 
@@ -168,7 +183,7 @@ namespace ignisilva
             return output;
         }
 
-        public Int32[,,] GetOutputHistogram()
+        public Int32[,,] GetInputHistogram()
         {
             Int32[,,] output = new Int32[NumUniqueOutputs,NumInputs,256];
 
@@ -208,44 +223,59 @@ namespace ignisilva
             return output;
         }
 
-        public float GetEntropy()
+        public static float _Entropy( Int32[] S, Int32 total = -1 )
         {
+            // this is an implementation of the Entropy function E(S) as described in:
             // http://www.saedsayad.com/decision_tree.htm
 
+            if( total < 0 )
+            {
+                total = 0;
+                foreach( Int32 i in S ) { total += i; }
+            }
+
+            float result = 0.0f;
+            
+            foreach( Int32 i in S )
+            {
+                float fraction = (float)i / (float)total;
+
+                result += -( fraction * ( (float)Math.Log( fraction, 2.0 ) ) ); // log_2(x)
+            }
+
+            return result;
+        }
+
+        public float GetEntropy()
+        {
+            // this is a simplification of the Entropy function E(S) as described in:
+            // http://www.saedsayad.com/decision_tree.htm
+            // E(S) = this.GetEntropy() where this = S
+
             Int32[] numSamplesPerOutput = new Int32[NumUniqueOutputs];
-            float a = 0.0f;
+            Int32 total = 0;
 
             for( int i = 0; i < NumUniqueOutputs; ++i )
             {
                 numSamplesPerOutput[i] = uniqueOutputSets.ToList()[i].Value.Count;
-                a += (float)numSamplesPerOutput[i] * (float)numSamplesPerOutput[i];
+                total += numSamplesPerOutput[i];
             }
-            a = (float)Math.Sqrt( a );
-
-            float[] normalizedSPO = new float[NumUniqueOutputs];
-
-            for( int i = 0; i < NumUniqueOutputs; ++i )
-            {
-                normalizedSPO[i] = (float)numSamplesPerOutput[i] / a;
-            }
-
-            float entropyValue = 0.0f;
-
-            // 1.0f for natural entropy bit
-            //  (float)Math.Log( 2.0f ) for shannon
-            // (float)Math.Log( 10.0f ) for hartley
-            float divlog = NumUniqueOutputs;// (float)Math.Log(2.0f);
-
-            for( int i = 0; i < NumUniqueOutputs; ++i )
-            {
-                // I think this will be correct
-                //Console.WriteLine("p_i={0},E()={1}", normalizedSPO[i], -( normalizedSPO[i] * ((float)Math.Log( normalizedSPO[i] )/ divlog ) ) );
-                entropyValue += -( normalizedSPO[i] * ( (float)Math.Log( normalizedSPO[i] ) / divlog ) );
-            }
-
-            return entropyValue;
+            
+            return _Entropy( numSamplesPerOutput, total );
         }
 
+        public float GetEntropy( Int32 inputIndex )
+        {
+            // this is the Entropy function E(T,X) as described in:
+            // http://www.saedsayad.com/decision_tree.htm
+            // E(T,X) = this.GetEntropy( X ) where this = T and X is the inputIndex
+
+
+            // TODO: IMPLEMENT!!!
+
+
+            return 0.0f;
+        }
 
 
         public XmlWriter WriteXml( XmlWriter xml, string fmt = "b64" )

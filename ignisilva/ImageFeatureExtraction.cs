@@ -131,7 +131,7 @@ namespace ignisilva
                 sharp.Save( outputFolder + fileinfo.Name + "_" + itts + "02_sharp.jpg", jpgCodec, jpgQuality );
             }
 
-            if( imageTypesToSave[itts++] || true )
+            if( imageTypesToSave[itts++] || !true )
             {
                 ImageFunctions.MakeGrayscale3( image ).Save( outputFolder + fileinfo.Name + "_" + itts + "03_gray.jpg", jpgCodec, jpgQuality );
             }
@@ -155,7 +155,7 @@ namespace ignisilva
 
                 Bitmap hogOutput = Hog.BinGradientsToBitmap( binGradients, hogBinSize, darkenedBackdropImage );
 
-                hogOutput = ImageFunctions.AddImages( hogOutput, ImageFunctions.ImageKernal( image, new float[,] { { 0.5f } } ) );
+                hogOutput = ImageFunctions.AddImages( hogOutput, ImageFunctions.ImageKernal( backdropImage, new float[,] { { 1.0f/16.0f } } ) );
 
                 hogOutput.Save( outputFolder + fileinfo.Name + "_" + itts + "04_hogV.png" );
             }
@@ -183,6 +183,118 @@ namespace ignisilva
             //GC.Collect();
         }
 
+
+        /*public static SampleDataSet ExtractHogDataFromTrainingImage( string filename )
+        {
+            return ExtractHogDataFromTrainingImage( filename, 11 );
+        }*/
+
+        public static SampleDataSet ExtractHogDataFromTrainingImage( string filename, Int32 featureSize = 11, Int32 maxImageDimention = 2048 )
+        {
+            //const int maxImageDimention = -1024;
+            const int HOG_block_size = 8;
+            const int HOG_norm_size = 2;
+
+            SampleDataSet output = null;
+            try
+            {
+                FileInfo inputFileInfo = new FileInfo( filename );
+                FileInfo trainingFileInfo = new FileInfo( filename + "_trainingdata.png" );
+
+                /* Load The Images */
+                Console.WriteLine( "Load The Images" );
+                Bitmap image = new Bitmap( Image.FromFile( inputFileInfo.FullName ) );
+                Bitmap trainingImage = new Bitmap( Image.FromFile( trainingFileInfo.FullName ) );
+
+                if( image.Size != trainingImage.Size )
+                {
+                    return null;
+                }
+
+                double scale = Math.Min( (double)maxImageDimention / image.Width, (double)maxImageDimention / image.Height );
+
+                /* Scale the Image */
+                Console.WriteLine( "Scale the Image {0}", scale );
+                if( maxImageDimention > 0 && scale < 1.0 && scale > 0.0 )
+                {
+                    image = new Bitmap( image,  (int)( image.Width * scale ), (int)( image.Height * scale )  );
+                    //trainingImage = new Bitmap( trainingImage,  (int)(trainingImage.Width * scale ), (int)( trainingImage.Height * scale )  );
+                    trainingImage = ImageFunctions.ScaleDownImageNearest( trainingImage, new Size( (int)( trainingImage.Width * scale ), (int)( trainingImage.Height * scale ) ) );
+                }
+
+                /* blur the image */
+                Console.WriteLine( "blur the image" );
+                Bitmap gaussian = image;
+                gaussian = ImageFunctions.ImageKernal( ImageFunctions.ImageKernal( gaussian, ImageFunctions.GaussianBlurXKernal, false, false ), ImageFunctions.GaussianBlurYKernal, false, false );
+
+                /* Extract The HOG data from the Image */
+                Console.WriteLine( "Extract The HOG data from the Image");
+                Bitmap hogInput = gaussian;
+
+                Size hogBinSize = new Size( HOG_block_size, HOG_block_size );
+
+                float[,,] gradientAngles = Hog.CalculateGradiantAngles( hogInput );
+                float[,,] binGradients = Hog.BinGradients( gradientAngles, hogBinSize );
+                binGradients = Hog.NormalizeBinnedGradients2( binGradients, new Size( HOG_norm_size, HOG_norm_size ) );
+                //binGradients = Hog.NormalizeBinnedGradients( binGradients );
+
+                byte[] trainingImageData = ImageFunctions.ExtractImageData( trainingImage );
+                Int32 trainingImageColorDepth = ImageFunctions.BytesPerPixelIn( trainingImage );
+
+                /* Extract the SampleData from the HOG */
+                Console.WriteLine( "Extract the SampleData from the HOG" );
+                output = new SampleDataSet( featureSize * featureSize * binGradients.GetLength( 2 ), trainingImageColorDepth );
+
+                for( Int32 y = 0; y < binGradients.GetLength( 1 ); ++y )
+                {
+                    for( Int32 x = 0; x < binGradients.GetLength( 0 ); ++x )
+                    {
+                        float cX = Func.Clamp(( ( (float)( x ) + 0.5f ) * (float)( HOG_block_size ) ) ,0, trainingImage.Size.Width-1);
+                        float cY = Func.Clamp( ( ( (float)( y ) + 0.5f ) * (float)( HOG_block_size ) ),0, trainingImage.Size.Height-1);
+
+                        byte[] sampleOutput = ImageFunctions.GetRawPixelFromImageData( trainingImageData, (Int32)cX, (Int32)cY, trainingImage.Size.Width, trainingImageColorDepth );
+
+                        byte[] sampleInput = GetBytesInBoxFromHog( binGradients, x, y, featureSize );
+                        
+                        output.AddData( new SampleData( sampleInput, sampleOutput ) );
+                    }
+                }
+
+                //return output;
+            }
+            catch( Exception e )
+            {
+                Console.WriteLine( "Exception In ImageFeatureExtraction.ExtractHogDataFromTrainingImage()\nMessage: " + e.Message + "\nStackTrace: " + e.StackTrace );
+            }
+            finally
+            {
+
+            }
+            return output;
+        }
+        
+        public static byte[] GetBytesInBoxFromHog( float[,,] binGradients, Int32 in_x, Int32 in_y, Int32 featureSize )
+        {
+            byte[] output = new byte[featureSize * featureSize * binGradients.GetLength( 2 )];
+
+            for( Int32 _y = 0; _y < featureSize; ++_y )
+            {
+                for( Int32 _x = 0; _x < featureSize; ++_x )
+                {
+                    Int32 x = Func.Clamp( ( in_x + _x - ( featureSize - 1 ) / 2 ), 0, binGradients.GetLength( 0 ) - 1 );
+                    Int32 y = Func.Clamp( ( in_y + _y - ( featureSize - 1 ) / 2 ), 0, binGradients.GetLength( 1 ) - 1 );
+
+                    Int32 outputIndex = ImageFunctions.GetPixelIndex( _x, _y, featureSize, binGradients.GetLength( 2 ) );
+
+                    for( Int32 z = 0; z < binGradients.GetLength( 2 ); ++z )
+                    {
+                        output[outputIndex + z] = (byte)Func.Clamp( binGradients[x, y, z]*255.0f, 0.0f, 255.0f );
+                    }
+                }
+            }
+
+            return output;
+        }
 
     }
 }

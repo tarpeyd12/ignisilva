@@ -23,7 +23,7 @@ namespace ignisilva
 
             if( false )
             {
-                bool[] toGenImages = new bool[] { false, false, false, false, true, true, false, false };
+                bool[] toGenImages = new bool[] { false, false, false, false, !true, true, false, false };
 
                 ImageFeatureExtraction.ExtractImageFeaturesFromDirectory( folder, outputFolder, toGenImages );
             }
@@ -46,7 +46,10 @@ namespace ignisilva
 
             SampleDataSet sampleSet = new SampleDataSet( 2, 3 );
 
-            Int32 _subsets = 256/1;
+            /*sampleSet = ImageFeatureExtraction.ExtractHogDataFromTrainingImage( folder + @"7608091.jpg" );
+            sampleSet.AddData( ImageFeatureExtraction.ExtractHogDataFromTrainingImage( folder + @"final.jpg" ) );*/
+
+            Int32 _subsets = 256/2;
             for( Int32 i = 0; i < 1000000; ++i )
             {
                 byte[] input = new byte[2];
@@ -64,31 +67,34 @@ namespace ignisilva
                 sampleSet.AddData( sample );
             }
             XmlWriter xml = CreateXmlWriter( outputFolder + @"dataset.xml" );
-            sampleSet.RandomSubSet( (Int32)Math.Sqrt( sampleSet.NumSamples ) ).WriteXml( xml, xmlEncoding );
+            //sampleSet.RandomSubSet( (Int32)Math.Sqrt( sampleSet.NumSamples ) ).WriteXml( xml, xmlEncoding );
+            sampleSet.WriteXml( xml, "z64" );
             //sampleSet.SubSetByOutput( 0 ).WriteXml( xml );
             xml.Flush();
             xml.Close();
 
             float entropy1 = sampleSet.GetEntropy();
-            Console.WriteLine( "SampleSetEntropy = {0}.", entropy1 );
+            Console.WriteLine( "SampleSetEntropy = {0:F6}.", entropy1 );
 
             SampleDataSet[] splitSubSets1 = sampleSet.SplitSet( 0, 128 );
             SampleDataSet[] splitSubSets2 = sampleSet.SplitSet( 1, 128 );
 
-            Console.WriteLine( "SampleSetEntropy(0,128,L) = {0:F4}, {1}", splitSubSets1[0].GetEntropy(), splitSubSets1[0].NumUniqueOutputs );
-            Console.WriteLine( "SampleSetEntropy(0,128,G) = {0:F4}, {1}", splitSubSets1[1].GetEntropy(), splitSubSets1[1].NumUniqueOutputs );
-            Console.WriteLine( "SampleSetEntropy(1,128,L) = {0:F4}, {1}", splitSubSets2[0].GetEntropy(), splitSubSets2[0].NumUniqueOutputs );
-            Console.WriteLine( "SampleSetEntropy(1,128,G) = {0:F4}, {1}", splitSubSets2[1].GetEntropy(), splitSubSets2[1].NumUniqueOutputs );
+            Console.WriteLine( "SampleSetEntropy(0,128,L) = {0:F6}, {1}", splitSubSets1[0].GetEntropy(), splitSubSets1[0].NumUniqueOutputs );
+            Console.WriteLine( "SampleSetEntropy(0,128,G) = {0:F6}, {1}", splitSubSets1[1].GetEntropy(), splitSubSets1[1].NumUniqueOutputs );
+            Console.WriteLine( "SampleSetEntropy(1,128,L) = {0:F6}, {1}", splitSubSets2[0].GetEntropy(), splitSubSets2[0].NumUniqueOutputs );
+            Console.WriteLine( "SampleSetEntropy(1,128,G) = {0:F6}, {1}", splitSubSets2[1].GetEntropy(), splitSubSets2[1].NumUniqueOutputs );
+
+            Console.WriteLine( "Entropy(9,5) = {0}.", SampleDataSet._Entropy( new Int32[]{ 9,5}) );
 
             using( StreamWriter file = new StreamWriter( outputFolder + @"outhisto.txt" ) )
             {
 
-                file.WriteLine("INPUTS[");
+                file.WriteLine("OUTPUTS[");
                 for( Int32 i = 0; i < sampleSet.NumInputs; ++i )
                 {
                     file.Write( "({0})<", i );
                     file.WriteLine( "" );
-                    Int32[,] inhisto = sampleSet.GetInputHistogram( i );
+                    Int32[,] inhisto = sampleSet.GetOutputHistogram( i );
 
                     for( Int32 x = 0; x < inhisto.GetLength( 1 ); ++x )
                     {
@@ -105,7 +111,7 @@ namespace ignisilva
                 }
                 file.WriteLine( "]" );
 
-                /*Int32[,,] outhisto = sampleSet.GetOutputHistogram();
+                /*Int32[,,] outhisto = sampleSet.GetInputHistogram();
 
                 for( Int32 i = 0; i < sampleSet.NumInputs; ++i )
                 {

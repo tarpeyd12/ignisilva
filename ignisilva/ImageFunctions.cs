@@ -439,6 +439,20 @@ namespace ignisilva
         }
 
 
+        public static byte[] GetRawPixelFromImageData( byte[] imageData, Int32 x, Int32 y, Int32 width, Int32 depth )
+        {
+            byte[] output = new byte[depth];
+
+            Int32 index = GetPixelIndex( x, y, width, depth );
+
+            for( Int32 color = 0; color < depth; ++color )
+            {
+                output[color] = imageData[index + color];
+            }
+
+            return output;
+        }
+
         public static Int32 GetPixelIndex( Int32 x, Int32 y, Int32 width, Int32 depth )
         {
             return ( ( y * width ) + x ) * depth;
@@ -530,6 +544,29 @@ namespace ignisilva
             //dispose the Graphics object
             g.Dispose();
             return newBitmap;
+        }
+
+        public static Bitmap ScaleDownImageNearest( Bitmap input, Size newSize )
+        {
+            Int32 pixelDepth = BytesPerPixelIn( input );
+            byte[] inputData = ExtractImageData( input );
+            byte[] outputData = new byte[ newSize.Width * newSize.Height * pixelDepth ];
+
+            for( Int32 y = 0; y < newSize.Height; ++y )
+            {
+                for( Int32 x = 0; x < newSize.Width; ++x )
+                {
+                    Int32 outputPixelIndex = GetPixelIndex( x, y, newSize.Width, pixelDepth );
+                    Int32 inputPixelIndex = GetPixelIndex( (Int32)Func.Clamp( (double)x/(double)newSize.Width*(double)input.Width, 0, input.Width - 1 ), (Int32)Func.Clamp( (double)y / (double)newSize.Height * (double)input.Width, 0, input.Height - 1 ), input.Width, pixelDepth );
+
+                    for( Int32 color = 0; color < pixelDepth; ++color )
+                    {
+                        outputData[outputPixelIndex + color] = inputData[inputPixelIndex + color];
+                    }
+                }
+            }
+
+            return GenerateImageFromData( newSize, outputData, input.PixelFormat );
         }
 
     }
