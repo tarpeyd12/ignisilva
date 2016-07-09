@@ -84,7 +84,7 @@ namespace ignisilva
 
             Int32[] sums = new Int32[NumOutputs];
 
-            List<Int32> indexes = Func.UniqueRandomNumberRange( Num, 0, NumTrees, random );
+            Int32[] indexes = Func.UniqueRandomNumberRange( Num, 0, NumTrees, random );
 
             foreach( Int32 treeIndex in indexes )
             {
@@ -106,7 +106,7 @@ namespace ignisilva
 
             for( Int32 i = 0; i < NumOutputs; ++i )
             {
-                output[i] = (byte)Func.Clamp( ( (double)sums[i] / (double)indexes.Count ), 0.0f, 255.0f );
+                output[i] = (byte)Func.Clamp( ( (double)sums[i] / (double)indexes.Length ), 0.0f, 255.0f );
             }
 
             return output;

@@ -15,26 +15,31 @@ namespace ignisilva
             else                                { return val; }
         }
 
-        public static List<Int32> UniqueRandomNumberRange( Int32 numberOfOutputs, Int32 Min, Int32 Max, Random random )
+        public static Int32[] UniqueRandomNumberRange( Int32 numberOfOutputs, Int32 Min, Int32 Max, Random random )
         {
             HashSet<Int32> check = new HashSet<Int32>();
 
             // TODO: this might be off-by-one
-            if( Max-Min <= numberOfOutputs )
+            if( Max - Min <= numberOfOutputs )
             {
-                return new List<Int32>( Enumerable.Range( Min, Max-Min ).ToArray() );
+                return Enumerable.Range( Min, Max - Min ).ToArray();
             }
 
             while( check.Count < numberOfOutputs )
             {
-                while( !check.Add( random.Next( Min, Max ) ) );
+                while( !check.Add( random.Next( Min, Max ) ) ) ;
             }
 
             List<Int32> output = check.ToList();
 
             output.Sort();
 
-            return output;
+            return output.ToArray();
+        }
+
+        public static List<Int32> UniqueRandomNumberRangeList( Int32 numberOfOutputs, Int32 Min, Int32 Max, Random random )
+        {
+            return new List<Int32>( UniqueRandomNumberRange( numberOfOutputs, Min, Max, random) );
         }
         
         public static string ToCSV( byte[] data )

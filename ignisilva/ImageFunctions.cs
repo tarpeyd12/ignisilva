@@ -557,7 +557,7 @@ namespace ignisilva
                 for( Int32 x = 0; x < newSize.Width; ++x )
                 {
                     Int32 outputPixelIndex = GetPixelIndex( x, y, newSize.Width, pixelDepth );
-                    Int32 inputPixelIndex = GetPixelIndex( (Int32)Func.Clamp( (double)x/(double)newSize.Width*(double)input.Width, 0, input.Width - 1 ), (Int32)Func.Clamp( (double)y / (double)newSize.Height * (double)input.Width, 0, input.Height - 1 ), input.Width, pixelDepth );
+                    Int32 inputPixelIndex = GetPixelIndex( (Int32)Func.Clamp( (double)x/(double)newSize.Width*(double)input.Width, 0, input.Width - 1 ), (Int32)Func.Clamp( (double)y / (double)newSize.Height * (double)input.Height, 0, input.Height - 1 ), input.Width, pixelDepth );
 
                     for( Int32 color = 0; color < pixelDepth; ++color )
                     {

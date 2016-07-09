@@ -189,7 +189,7 @@ namespace ignisilva
             return ExtractHogDataFromTrainingImage( filename, 11 );
         }*/
 
-        public static SampleDataSet ExtractHogDataFromTrainingImage( string filename, Int32 featureSize = 11, Int32 maxImageDimention = 2048 )
+        public static SampleDataSet ExtractHogDataFromTrainingImage( string filename, Int32 featureSize = 11, Int32 maxImageDimention = 1024 )
         {
             //const int maxImageDimention = -1024;
             const int HOG_block_size = 8;
@@ -217,9 +217,15 @@ namespace ignisilva
                 Console.WriteLine( "Scale the Image {0}", scale );
                 if( maxImageDimention > 0 && scale < 1.0 && scale > 0.0 )
                 {
-                    image = new Bitmap( image,  (int)( image.Width * scale ), (int)( image.Height * scale )  );
                     //trainingImage = new Bitmap( trainingImage,  (int)(trainingImage.Width * scale ), (int)( trainingImage.Height * scale )  );
                     trainingImage = ImageFunctions.ScaleDownImageNearest( trainingImage, new Size( (int)( trainingImage.Width * scale ), (int)( trainingImage.Height * scale ) ) );
+
+                    //trainingImage.Save( @"../../../images/out/" + trainingFileInfo.Name + @".png" );
+                    //ImageFunctions.MultiplyImages( ImageFunctions.MakeGrayscale3(image), new Bitmap( trainingImage , image.Size) ).Save( @"../../../images/out/" + trainingFileInfo.Name + @"2.png" );
+
+                    image = new Bitmap( image,  (int)( image.Width * scale ), (int)( image.Height * scale )  );
+                    
+                    //GC.Collect();
                 }
 
                 /* blur the image */

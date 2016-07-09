@@ -12,6 +12,7 @@ namespace ignisilva
     {
         public Int32 NumInputs  { get; }
         public Int32 NumOutputs { get; }
+        public Int32 NumNodes { get { return tree.Count; } }
 
         private Dictionary<Int32,DecisionNode> tree;
         private DecisionNode[] flatTree;
@@ -38,6 +39,21 @@ namespace ignisilva
             if( flatTree != null )
             {
                 flatTree = null;
+            }
+
+            return true;
+        }
+
+        public bool AddNode( List<DecisionNode> nodeList )
+        {
+            if( nodeList == null || nodeList.Count == 0 )
+            {
+                return false;
+            }
+
+            foreach( DecisionNode node in nodeList )
+            {
+                AddNode( node );
             }
 
             return true;

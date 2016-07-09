@@ -46,10 +46,11 @@ namespace ignisilva
 
             SampleDataSet sampleSet = new SampleDataSet( 2, 3 );
 
-            /*sampleSet = ImageFeatureExtraction.ExtractHogDataFromTrainingImage( folder + @"7608091.jpg" );
-            sampleSet.AddData( ImageFeatureExtraction.ExtractHogDataFromTrainingImage( folder + @"final.jpg" ) );*/
+            sampleSet = ImageFeatureExtraction.ExtractHogDataFromTrainingImage( folder + @"7608091.jpg" );
+            sampleSet.AddData( ImageFeatureExtraction.ExtractHogDataFromTrainingImage( folder + @"final.png" ) );
 
-            Int32 _subsets = 256/2;
+            
+            /*Int32 _subsets = 256/16;
             for( Int32 i = 0; i < 1000000; ++i )
             {
                 byte[] input = new byte[2];
@@ -65,10 +66,12 @@ namespace ignisilva
                 SampleData sample = new SampleData( input, output );
 
                 sampleSet.AddData( sample );
-            }
+            }*/
+            
             XmlWriter xml = CreateXmlWriter( outputFolder + @"dataset.xml" );
-            //sampleSet.RandomSubSet( (Int32)Math.Sqrt( sampleSet.NumSamples ) ).WriteXml( xml, xmlEncoding );
-            sampleSet.WriteXml( xml, "z64" );
+            //sampleSet = sampleSet.RandomSubSet( (Int32)Math.Sqrt( sampleSet.NumSamples ), new Random(12345) );
+            sampleSet.WriteXml( xml, xmlEncoding );
+            //sampleSet.WriteXml( xml, "z64" );
             //sampleSet.SubSetByOutput( 0 ).WriteXml( xml );
             xml.Flush();
             xml.Close();
@@ -76,20 +79,37 @@ namespace ignisilva
             float entropy1 = sampleSet.GetEntropy();
             Console.WriteLine( "SampleSetEntropy = {0:F6}.", entropy1 );
 
-            SampleDataSet[] splitSubSets1 = sampleSet.SplitSet( 0, 128 );
+            /*SampleDataSet[] splitSubSets1 = sampleSet.SplitSet( 0, 128 );
             SampleDataSet[] splitSubSets2 = sampleSet.SplitSet( 1, 128 );
 
             Console.WriteLine( "SampleSetEntropy(0,128,L) = {0:F6}, {1}", splitSubSets1[0].GetEntropy(), splitSubSets1[0].NumUniqueOutputs );
             Console.WriteLine( "SampleSetEntropy(0,128,G) = {0:F6}, {1}", splitSubSets1[1].GetEntropy(), splitSubSets1[1].NumUniqueOutputs );
             Console.WriteLine( "SampleSetEntropy(1,128,L) = {0:F6}, {1}", splitSubSets2[0].GetEntropy(), splitSubSets2[0].NumUniqueOutputs );
-            Console.WriteLine( "SampleSetEntropy(1,128,G) = {0:F6}, {1}", splitSubSets2[1].GetEntropy(), splitSubSets2[1].NumUniqueOutputs );
+            Console.WriteLine( "SampleSetEntropy(1,128,G) = {0:F6}, {1}", splitSubSets2[1].GetEntropy(), splitSubSets2[1].NumUniqueOutputs );*/
 
-            Console.WriteLine( "Entropy(9,5) = {0}.", SampleDataSet._Entropy( new Int32[]{ 9,5}) );
+            {
+                Int32[] spl0 = GetBestSplit( sampleSet );
+
+                SampleDataSet[] splitSets0 = sampleSet.SplitSet( spl0[0], (byte)spl0[1] );
+
+                Int32[] spl1 = GetBestSplit( splitSets0[0] );
+                Int32[] spl2 = GetBestSplit( splitSets0[1] );
+
+                SampleDataSet[] splitSets1 = splitSets0[0].SplitSet( spl1[0], (byte)spl1[1] );
+                SampleDataSet[] splitSets2 = splitSets0[1].SplitSet( spl2[0], (byte)spl2[1] );
+
+                Console.WriteLine( "[0,0]=[{0}]", Func.ToCSV( splitSets1[0].GetAverageOutput() ) );
+                Console.WriteLine( "[0,1]=[{0}]", Func.ToCSV( splitSets1[1].GetAverageOutput() ) );
+                Console.WriteLine( "[1,0]=[{0}]", Func.ToCSV( splitSets2[0].GetAverageOutput() ) );
+                Console.WriteLine( "[1,1]=[{0}]", Func.ToCSV( splitSets2[1].GetAverageOutput() ) );
+            }
+
+            Console.WriteLine( "Entropy(9,5) = {0}.", SampleDataSet._Entropy( new Int32[] { 9, 5 } ) );
 
             using( StreamWriter file = new StreamWriter( outputFolder + @"outhisto.txt" ) )
             {
 
-                file.WriteLine("OUTPUTS[");
+                file.WriteLine( "OUTPUTS[" );
                 for( Int32 i = 0; i < sampleSet.NumInputs; ++i )
                 {
                     file.Write( "({0})<", i );
@@ -131,7 +151,8 @@ namespace ignisilva
                     file.WriteLine( ">" );
                 }
                 file.WriteLine( ">" );*/
-                file.WriteLine( "OUTPUTS[" );
+
+                /*file.WriteLine( "OUTPUTS[" );
                 for( Int32 i = 0; i < sampleSet.NumInputs; ++i )
                 {
                     file.Write( "({0})<", i );
@@ -142,13 +163,23 @@ namespace ignisilva
                         file.WriteLine( "[{2}]:{0:D3},{1:D3}", outminmax[x, 0], outminmax[x, 1], Func.ToCSV( sampleSet.GetUniqueOutput( x ) ) );
                     }
                 }
-                file.WriteLine( "]" );
+                file.WriteLine( "]" );*/
             }
 
             GC.Collect();
 
-            Console.WriteLine( "Press [Return] to exit ..." );
+            Console.WriteLine( "Press [Return] to exit ...\a" );
             Console.ReadLine();
+        }
+
+        static Int32[] GetBestSplit( SampleDataSet sampleSet )
+        {
+            int bestIG_index = 0;
+            byte bestIG_value = 0;
+
+            sampleSet.GetBestSplit( out bestIG_index, out bestIG_value );
+               
+            return new Int32[] { bestIG_index, bestIG_value };
         }
 
         static Bitmap DecisionForestTestImage( Random random, DecisionForest forest )

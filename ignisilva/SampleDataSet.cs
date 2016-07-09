@@ -88,7 +88,7 @@ namespace ignisilva
         {
             SampleDataSet subSampleSet = new SampleDataSet( NumInputs, NumOutputs );
 
-            List<Int32> indexes = Func.UniqueRandomNumberRange( Num, 0, NumSamples, random == null ? new Random() : random );
+            Int32[] indexes = Func.UniqueRandomNumberRange( Num, 0, NumSamples, random == null ? new Random() : random );
 
             foreach( Int32 index in indexes )
             {
@@ -135,7 +135,7 @@ namespace ignisilva
         {
             return uniqueOutputSets.ToList()[OutputID].Value[0].Output;
         }
-
+        
         public SampleDataSet SubSetByOutput( Int32 OutputID )
         {
             if( OutputID >= NumUniqueOutputs )
@@ -223,6 +223,31 @@ namespace ignisilva
             return output;
         }
 
+        public byte[] GetAverageOutput()
+        {
+            Int32[] sums = new Int32[NumOutputs];
+            
+            for( Int32 i = 0; i < NumUniqueOutputs; ++i )
+            {
+                byte[] currentOutput = GetUniqueOutput( i );
+                Int32 numCurrentOutputs = GetNumSetsByUniqueOutput( i );
+
+                for( Int32 c = 0; c < NumOutputs; ++c )
+                {
+                    sums[c] += currentOutput[c] * numCurrentOutputs;
+                }
+            }
+
+            byte[] avgOutput = new byte[NumOutputs];
+
+            for( Int32 i = 0; i < NumOutputs; ++i )
+            {
+                avgOutput[i] = (byte)Func.Clamp( (Int32)( sums[i]/NumSamples ), 0, 255 );
+            }
+
+            return avgOutput;
+        }
+
         public static float _Entropy( Int32[] S, Int32 total = -1 )
         {
             // this is an implementation of the Entropy function E(S) as described in:
@@ -264,17 +289,84 @@ namespace ignisilva
             return _Entropy( numSamplesPerOutput, total );
         }
 
-        public float GetEntropy( Int32 inputIndex )
+        public float GetEntropy( Int32 splitIndex, byte splitValue )
         {
             // this is the Entropy function E(T,X) as described in:
             // http://www.saedsayad.com/decision_tree.htm
-            // E(T,X) = this.GetEntropy( X ) where this = T and X is the inputIndex
+            // E(T,X) = this.GetEntropy( X ) where this = T and X is the split (splitIndex and the splitValue)
+
+            float total = 0.0f;
+
+            {
+                SampleDataSet[] splitSet = SplitSet( splitIndex, splitValue );
+                
+                foreach( SampleDataSet s in splitSet )
+                {
+                    total += ( (float)s.NumSamples / (float)NumSamples ) * s.GetEntropy();
+                }
+            }
+            
+            return total;
+        }
+
+        public float GetInformationGainOfSplit( Int32 splitIndex, byte splitValue )
+        {
+            return GetEntropy() - GetEntropy( splitIndex, splitValue );
+        }
 
 
-            // TODO: IMPLEMENT!!!
+        // todo Figure out how to have this function retrun SampleDataSet[] with the set presplit so that we dont have to do that again.
+        public bool GetBestSplit( out Int32 splitIndex, out byte splitValue, Int32[] inputIndexes = null )
+        {
+            if( NumUniqueOutputs <= 1 )
+            {
+                splitIndex = -1;
+                splitValue = 0;
+                return false;
+            }
+            
+            // TODO: use inline functions/delegete to reduce code duplication here.
 
+            if( inputIndexes == null )
+            {
+                float bestIG = GetInformationGainOfSplit( 0, (byte)0 );
+                splitIndex = 0;
+                splitValue = 0;
+                for( int i = 0; i < NumInputs; ++i )
+                {
+                    for( int v = 0; v < 256; ++v )
+                    {
+                        float ig = GetInformationGainOfSplit( i, (byte)v );
+                        if( ig > bestIG )
+                        {
+                            bestIG = ig;
+                            splitIndex = i;
+                            splitValue = (byte)v;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                float bestIG = GetInformationGainOfSplit( inputIndexes[0], (byte)0 );
+                splitIndex = inputIndexes[0];
+                splitValue = 0;
+                foreach( Int32 i in inputIndexes )
+                {
+                    for( int v = 0; v < 256; ++v )
+                    {
+                        float ig = GetInformationGainOfSplit( i, (byte)v );
+                        if( ig > bestIG )
+                        {
+                            bestIG = ig;
+                            splitIndex = i;
+                            splitValue = (byte)v;
+                        }
+                    }
+                }
+            }
 
-            return 0.0f;
+            return true;
         }
 
 
