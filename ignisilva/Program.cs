@@ -32,7 +32,7 @@ namespace ignisilva
 
             DecisionForest forest = new DecisionForest( 2, 3 );
             
-            for( int i = 0; i < 25; ++i  )
+            for( int i = 0; i < 0; ++i  )
             {
                 while( forest.NumTrees < i*i+1 )
                 {
@@ -50,8 +50,8 @@ namespace ignisilva
             //sampleSet.AddData( ImageFeatureExtraction.ExtractHogDataFromTrainingImage( folder + @"final.png" ) );
 
             
-            Int32 _subsets = 256/3;
-            for( Int32 i = 0; i < 100000; ++i )
+            Int32 _subsets = 256/4;
+            for( Int32 i = 0; i < 1000000; ++i )
             {
                 byte[] input = new byte[2];
                 byte[] output = new byte[3];
@@ -62,7 +62,7 @@ namespace ignisilva
                 }
                 output[2] = (byte)( ( input[0] / _subsets ) * _subsets ); // red
                 output[1] = (byte)( ( input[1] / _subsets ) * _subsets ); // green
-                output[0] = (byte)( ( Func.Clamp( ImageFunctions.ColorValueDistance( new byte[] { 0, 0 }, input ) * 255.0f, 0.0f, 255.0f ) / _subsets) * _subsets); // blue
+                output[0] = (byte)( 255 - ( Func.Clamp( ImageFunctions.ColorValueDistance( new byte[] { 0, 0 }, input ), 0.0f, 255.0f ) ) ); // blue
                 SampleData sample = new SampleData( input, output );
 
                 sampleSet.AddData( sample );
@@ -107,7 +107,7 @@ namespace ignisilva
             //Console.WriteLine( "Entropy(9,5) = {0}.", SampleDataSet._Entropy( new Int32[] { 9, 5 } ) );
 
             {
-                List<DecisionNode> nodeList = TreeGenerator.Split( sampleSet, null, -1 );
+                List<DecisionNode> nodeList = TreeGenerator.Split( sampleSet.RandomSubSet(1000,random), null, 8 );
 
                 DecisionForest f = new DecisionForest( 2, 3 );
                 DecisionTree t = new DecisionTree( 2, 3 );

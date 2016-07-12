@@ -8,12 +8,11 @@ namespace ignisilva
 {
     class TreeGenerator
     {
-        public static List<DecisionNode> Split( SampleDataSet sampleData, Int32[] indexList = null, Int32 maxDepth = -1, Int32 currentDepth = 0, Int32 currentIndex = 0, Int32 nextIndex = 1, List<DecisionNode> nodes = null )
+        public static List<DecisionNode> Split( SampleDataSet sampleData, Int32[] indexList = null, Int32 maxDepth = -1, Int32 currentDepth = 0, List<DecisionNode> nodes = null )
         {
             const bool debug = true;
             if( nodes == null )
             {
-                if( debug ) Console.WriteLine( "[{0}] nodes == null; creating new list.", currentIndex );
                 nodes = new List<DecisionNode>();
             }
 
@@ -21,43 +20,40 @@ namespace ignisilva
             {
                 byte[] _output = sampleData.GetAverageOutput();
 
-                if( debug ) Console.WriteLine( "New Leaf Node [{0},[{1}]]", currentIndex, Func.ToCSV( _output ) );
-                nodes.Add( new DecisionNode( currentIndex, _output ) );
+                if( debug ) Console.WriteLine( "New Leaf Node [{0},[{1}]]", nodes.Count, Func.ToCSV( _output ) );
+                nodes.Add( new DecisionNode( nodes.Count, _output ) );
             }
             else
             {
                 Int32 _splitIndex;
                 byte _splitValue;
 
+
+                if( debug ) Console.WriteLine( "Splitting .... " );
                 sampleData.GetBestSplit( out _splitIndex, out _splitValue );
 
-                Int32[] nextSplitIndexes = new Int32[] { nextIndex + 0, nextIndex + 1 };
+                if( debug ) Console.WriteLine( "New Split Node [{0},{1},{2},[{3},{4}]]", nodes.Count, _splitIndex, _splitValue, -1, -1 );
 
-                if( debug ) Console.WriteLine( "New Split Node [{0},{1},{2},[{3},{4}]]", currentIndex, _splitIndex, _splitValue, nextSplitIndexes[0], nextSplitIndexes[1] );
-
-                DecisionNode node = new DecisionNode( currentIndex, _splitIndex, _splitValue, nextSplitIndexes[0], nextSplitIndexes[1] );
+                DecisionNode node = new DecisionNode( nodes.Count, _splitIndex, _splitValue, -1, -1 );
 
                 nodes.Add( node );
-
-                //if( debug ) Console.WriteLine( "[{0}] Splitting", currentIndex );
+                
                 SampleDataSet[] splitSets = sampleData.SplitSet( _splitIndex, _splitValue );
                 
                 List<DecisionNode> res = null;
+                
+                node.Next[0] = nodes.Count;
+                res = Split( splitSets[0], indexList, maxDepth, currentDepth + 1, nodes );
 
-                //if( debug ) Console.WriteLine( "[{0}] Repeating Less", currentIndex );
-                res = Split( splitSets[0], indexList, maxDepth, currentDepth + 1, nextSplitIndexes[0], nextSplitIndexes[1] + 1, nodes );
-
-                //if( debug ) Console.WriteLine( "[{0}] Repeating Less Adding", currentIndex );
-                //foreach( DecisionNode node in res ) { if( debug ) Console.WriteLine( "[{0}]", node ); nodes.Add( node ); }
-
-                //if( debug ) Console.WriteLine( "[{0}] Repeating Greater", currentIndex );
-                res = Split( splitSets[1], indexList, maxDepth, currentDepth + 1, nextSplitIndexes[1], (nodes.Count + 1), nodes );
-
-                //if( debug ) Console.WriteLine( "[{0}] Repeating Greater Adding", currentIndex );
-                //foreach( DecisionNode node in res ) { nodes.Add( node ); }
+                node.Next[1] = nodes.Count;
+                res = Split( splitSets[1], indexList, maxDepth, currentDepth + 1, nodes );
+                
             }
 
-            nodes.Sort( delegate ( DecisionNode n1, DecisionNode n2 ) { return n1.ID.CompareTo( n2.ID ); } );
+            if( currentDepth == 0 )
+            {
+                nodes.Sort( delegate ( DecisionNode n1, DecisionNode n2 ) { return n1.ID.CompareTo( n2.ID ); } );
+            }
 
             return nodes;
         }
