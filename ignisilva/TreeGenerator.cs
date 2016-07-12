@@ -10,7 +10,7 @@ namespace ignisilva
     {
         public static List<DecisionNode> Split( SampleDataSet sampleData, Int32[] indexList = null, Int32 maxDepth = -1, Int32 currentDepth = 0, List<DecisionNode> nodes = null )
         {
-            const bool debug = true;
+            const bool debug = !true;
             if( nodes == null )
             {
                 nodes = new List<DecisionNode>();

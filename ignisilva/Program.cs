@@ -50,7 +50,7 @@ namespace ignisilva
             //sampleSet.AddData( ImageFeatureExtraction.ExtractHogDataFromTrainingImage( folder + @"final.png" ) );
 
             
-            Int32 _subsets = 256/4;
+            Int32 _subsets = 256/5;
             for( Int32 i = 0; i < 1000000; ++i )
             {
                 byte[] input = new byte[2];
@@ -60,9 +60,9 @@ namespace ignisilva
                 {
                     input[c] = (byte)random.Next( 256 );
                 }
-                output[2] = (byte)( ( input[0] / _subsets ) * _subsets ); // red
-                output[1] = (byte)( ( input[1] / _subsets ) * _subsets ); // green
-                output[0] = (byte)( 255 - ( Func.Clamp( ImageFunctions.ColorValueDistance( new byte[] { 0, 0 }, input ), 0.0f, 255.0f ) ) ); // blue
+                output[2] = (byte)(( ( input[0] / _subsets ) * _subsets )); // red
+                output[1] = (byte)(( ( input[1] / _subsets ) * _subsets )); // green
+                output[0] = (byte)( 255 - ( (int)Func.Clamp( ImageFunctions.ColorValueDistance( new byte[] { 0, 0 }, input ), 0.0f, 255.0f ) / _subsets ) * _subsets ); // blue
                 SampleData sample = new SampleData( input, output );
 
                 sampleSet.AddData( sample );
@@ -107,27 +107,20 @@ namespace ignisilva
             //Console.WriteLine( "Entropy(9,5) = {0}.", SampleDataSet._Entropy( new Int32[] { 9, 5 } ) );
 
             {
-                List<DecisionNode> nodeList = TreeGenerator.Split( sampleSet.RandomSubSet(1000,random), null, 8 );
-
                 DecisionForest f = new DecisionForest( 2, 3 );
-                DecisionTree t = new DecisionTree( 2, 3 );
-
-                Int32 c = 0;
-                foreach( DecisionNode node in nodeList )
+                for( int a = 0; a < 1000; ++a )
                 {
-                    Console.WriteLine( node.ToString() );
+                    Console.WriteLine( a );
+                    //List<DecisionNode> nodeList = TreeGenerator.Split( sampleSet.RandomSubSet(1000,random), null, -8 );
+                    List<DecisionNode> nodeList = TreeGenerator.Split( sampleSet.RandomSubSet( (int)Math.Sqrt( sampleSet.NumSamples ), random ), null/*Func.UniqueRandomNumberRange( 2, 0, sampleSet.NumInputs + 1, random )*/, 6 );
+                    
+                    DecisionTree t = new DecisionTree( 2, 3 );
+                    foreach( DecisionNode node in nodeList ) { t.AddNode( node ); }
 
-                    if( c != node.ID )
-                    {
-                        //Console.WriteLine( "ERRR c={0},id={1}", c, node.ID );
-                    }
-
-                    t.AddNode( node );
-
-                    ++c;
+                    f.AddTree( t );
+                    //DecisionForestTestImage( random, f ).Save( outputFolder + "____0Foresttest__" + a.ToString( "D4" ) + ".png" );
                 }
-                f.AddTree( t );
-
+                TestXmlWriter( outputFolder + "0forest.xml", f );
                 DecisionForestTestImage( random, f ).Save( outputFolder + "____0Foresttest.png" );
             }
 
