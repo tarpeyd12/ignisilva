@@ -92,6 +92,28 @@ namespace ignisilva
             return xml;
         }
 
+        public override string ToString()
+        {
+            string output = "{";
+
+            output += ID.ToString() + ",";
+
+            if( !IsLeaf )
+            {
+                output += "node,";
+                output += SplitIndex.ToString() + ",";
+                output += SplitValue.ToString() + ",";
+                output += "[" + Next[0].ToString() + "," + Next[1].ToString() + "]";
+            }
+            else
+            {
+                output += "leaf,";
+                output += "[" + Func.ToCSV( Output ) + "]";
+            }
+
+            return output + "}";
+        }
+
     }
 }
 

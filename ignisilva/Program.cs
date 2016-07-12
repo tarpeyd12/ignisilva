@@ -46,12 +46,12 @@ namespace ignisilva
 
             SampleDataSet sampleSet = new SampleDataSet( 2, 3 );
 
-            sampleSet = ImageFeatureExtraction.ExtractHogDataFromTrainingImage( folder + @"7608091.jpg" );
-            sampleSet.AddData( ImageFeatureExtraction.ExtractHogDataFromTrainingImage( folder + @"final.png" ) );
+            //sampleSet = ImageFeatureExtraction.ExtractHogDataFromTrainingImage( folder + @"7608091.jpg" );
+            //sampleSet.AddData( ImageFeatureExtraction.ExtractHogDataFromTrainingImage( folder + @"final.png" ) );
 
             
-            /*Int32 _subsets = 256/16;
-            for( Int32 i = 0; i < 1000000; ++i )
+            Int32 _subsets = 256/3;
+            for( Int32 i = 0; i < 100000; ++i )
             {
                 byte[] input = new byte[2];
                 byte[] output = new byte[3];
@@ -66,7 +66,7 @@ namespace ignisilva
                 SampleData sample = new SampleData( input, output );
 
                 sampleSet.AddData( sample );
-            }*/
+            }
             
             XmlWriter xml = CreateXmlWriter( outputFolder + @"dataset.xml" );
             //sampleSet = sampleSet.RandomSubSet( (Int32)Math.Sqrt( sampleSet.NumSamples ), new Random(12345) );
@@ -87,7 +87,7 @@ namespace ignisilva
             Console.WriteLine( "SampleSetEntropy(1,128,L) = {0:F6}, {1}", splitSubSets2[0].GetEntropy(), splitSubSets2[0].NumUniqueOutputs );
             Console.WriteLine( "SampleSetEntropy(1,128,G) = {0:F6}, {1}", splitSubSets2[1].GetEntropy(), splitSubSets2[1].NumUniqueOutputs );*/
 
-            {
+            /*{
                 Int32[] spl0 = GetBestSplit( sampleSet );
 
                 SampleDataSet[] splitSets0 = sampleSet.SplitSet( spl0[0], (byte)spl0[1] );
@@ -102,9 +102,34 @@ namespace ignisilva
                 Console.WriteLine( "[0,1]=[{0}]", Func.ToCSV( splitSets1[1].GetAverageOutput() ) );
                 Console.WriteLine( "[1,0]=[{0}]", Func.ToCSV( splitSets2[0].GetAverageOutput() ) );
                 Console.WriteLine( "[1,1]=[{0}]", Func.ToCSV( splitSets2[1].GetAverageOutput() ) );
-            }
+            }*/
 
-            Console.WriteLine( "Entropy(9,5) = {0}.", SampleDataSet._Entropy( new Int32[] { 9, 5 } ) );
+            //Console.WriteLine( "Entropy(9,5) = {0}.", SampleDataSet._Entropy( new Int32[] { 9, 5 } ) );
+
+            {
+                List<DecisionNode> nodeList = TreeGenerator.Split( sampleSet, null, -1 );
+
+                DecisionForest f = new DecisionForest( 2, 3 );
+                DecisionTree t = new DecisionTree( 2, 3 );
+
+                Int32 c = 0;
+                foreach( DecisionNode node in nodeList )
+                {
+                    Console.WriteLine( node.ToString() );
+
+                    if( c != node.ID )
+                    {
+                        //Console.WriteLine( "ERRR c={0},id={1}", c, node.ID );
+                    }
+
+                    t.AddNode( node );
+
+                    ++c;
+                }
+                f.AddTree( t );
+
+                DecisionForestTestImage( random, f ).Save( outputFolder + "____0Foresttest.png" );
+            }
 
             using( StreamWriter file = new StreamWriter( outputFolder + @"outhisto.txt" ) )
             {
@@ -203,10 +228,10 @@ namespace ignisilva
                 for( Int32 x = 0; x < imageTestSize.Height; ++x )
                 {
                     inputs[0] = (byte)Func.Clamp( x, 0, 255 );
-                    byte[] outputs = forest.DecideR( inputs, 10, random );
+                    //byte[] outputs = forest.DecideR( inputs, 10, random );
                     //byte[] outputs = forest.DecideR( inputs, Math.Max( Math.Min( (int)Math.Sqrt(forest.NumTrees), forest.NumTrees ), 1 ), random );
                     //byte[] outputs = forest.DecideRN( inputs, 100, 5, random );
-                    //byte[] outputs = forest.Decide( inputs );
+                    byte[] outputs = forest.Decide( inputs );
                     int pixelIndex = ImageFunctions.GetPixelIndex( x, y, imageTestSize.Width, 3 );
 
                     if( count++ % 100 == 0 )
@@ -221,7 +246,7 @@ namespace ignisilva
                 }
             }
 
-            Console.WriteLine( forest.Decide( new byte[] { (byte)random.Next( 255 ), (byte)random.Next( 255 ) } )[0] );
+            //Console.WriteLine( forest.Decide( new byte[] { (byte)random.Next( 255 ), (byte)random.Next( 255 ) } )[0] );
 
             //TestXmlWriter( forest );
 
