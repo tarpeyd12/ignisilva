@@ -52,18 +52,49 @@ namespace ignisilva
             Console.WriteLine( "Generating sample Data ..." );
 
             Int32 _subsets = 256/4;
-            for( Int32 i = 0; i < 100000; ++i )
+            for( Int32 i = 0; i < 5000000; ++i )
             {
                 byte[] input = new byte[2];
                 byte[] output = new byte[3];
 
-                for( int c = 0; c < input.Length; ++c )
+                /*for( int c = 0; c < input.Length; ++c )
                 {
                     input[c] = (byte)random.Next( 256 );
                 }
                 output[2] = (byte)(( ( input[0] / _subsets ) * _subsets )); // red
                 output[1] = (byte)(( ( input[1] / _subsets ) * _subsets )); // green
-                output[0] = (byte)( 255 - ( (int)Func.Clamp( ImageFunctions.ColorValueDistance( new byte[] { 0, 0 }, input ), 0.0f, 255.0f ) / _subsets ) * _subsets ); // blue
+                output[0] = (byte)( 255 - ( (int)Func.Clamp( ImageFunctions.ColorValueDistance( new byte[] { 0, 0 }, input ), 0.0f, 255.0f ) / _subsets ) * _subsets ); // blue*/
+
+                int numSpirals = 6;
+                int jitterRadius = 50;
+                
+                int p;
+                switch( p = random.Next( numSpirals ) )
+                {
+                    /*case 0: output = new byte[] { 255, 0, 0 }; break;
+                    case 1: output = new byte[] { 0, 255, 0 }; break;
+                    case 2: output = new byte[] { 0, 0, 255 }; break;*/
+
+                    case 0: output = new byte[] { 128, 0, 128 }; break; // purple
+                    case 1: output = new byte[] { 0, 69, 255 }; break; // orangered
+                    case 2: output = new byte[] { 0, 0, 128 }; break; // maroon
+                    case 3: output = new byte[] { 0, 255, 255 }; break; // yellow
+                    case 4: output = new byte[] { 0, 0, 255 }; break; // red
+                    case 5: output = new byte[] { 234, 224, 16 }; break; // ? terquoise ?
+                    default: output = new byte[] { 128, 128, 128 }; break; // grey
+                }
+
+                //float radius = (float)random.Next(1000)/1000.0f;
+                float radius = (float)random.NextDouble();
+                float angle = (radius) * (float)Math.PI * 2.0f + (float)p*(float)Math.PI*2.0f/(float)numSpirals;
+                //radius = Func.Clamp( radius * ( 1.0f - 0.125f ) + 0.125f, 0.0f, 1.0f );
+
+                input[0] = (byte)Func.Clamp( Math.Cos( angle ) * radius * 128.0f + 128.0f, 0, 255 );
+                input[1] = (byte)Func.Clamp( Math.Sin( angle ) * radius * 128.0f + 128.0f, 0, 255 );
+
+                input[0] = (byte)Func.Clamp( input[0] + ( random.Next( jitterRadius*2 ) - jitterRadius ) * radius, 0, 255 );
+                input[1] = (byte)Func.Clamp( input[1] + ( random.Next( jitterRadius*2 ) - jitterRadius ) * radius, 0, 255 );
+
                 SampleData sample = new SampleData( input, output );
 
                 sampleSet.AddData( sample );
@@ -111,11 +142,11 @@ namespace ignisilva
 
             {
                 DecisionForest f = new DecisionForest( 2, 3 );
-                for( int a = 0; a < 200; ++a )
+                for( int a = 0; a < 100; ++a )
                 {
                     Console.WriteLine( a );
                     //List<DecisionNode> nodeList = TreeGenerator.Split( sampleSet.RandomSubSet(1000,random), null, -8 );
-                    List<DecisionNode> nodeList = TreeGenerator.Split( sampleSet.RandomSubSet( (int)Math.Sqrt(sampleSet.NumSamples ), random ), random, null/*Func.UniqueRandomNumberRange( 2, 0, sampleSet.NumInputs + 1, random )*/, -1 );
+                    List<DecisionNode> nodeList = TreeGenerator.Split( sampleSet.RandomSubSet( (int)Math.Sqrt(sampleSet.NumSamples ), random ), random, null/*Func.UniqueRandomNumberRange( 2, 0, sampleSet.NumInputs + 1, random )*/, 16 );
                     
                     DecisionTree t = new DecisionTree( 2, 3 );
                     foreach( DecisionNode node in nodeList ) { t.AddNode( node ); }
@@ -227,6 +258,7 @@ namespace ignisilva
                     //byte[] outputs = forest.DecideR( inputs, 10, random );
                     //byte[] outputs = forest.DecideR( inputs, Math.Max( Math.Min( (int)Math.Sqrt(forest.NumTrees), forest.NumTrees ), 1 ), random );
                     //byte[] outputs = forest.DecideRN( inputs, 10, 5, random );
+                    //byte[] outputs = forest.DecideRN( inputs, Math.Max( Math.Min( (int)Math.Sqrt( forest.NumTrees ), forest.NumTrees ), 1 ), 5, random );
                     byte[] outputs = forest.Decide( inputs );
                     int pixelIndex = ImageFunctions.GetPixelIndex( x, y, imageTestSize.Width, 3 );
 

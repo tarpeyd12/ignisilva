@@ -240,6 +240,12 @@ namespace ignisilva
 
             byte[] avgOutput = new byte[NumOutputs];
 
+            if( NumSamples == 0 )
+            {
+                Console.WriteLine( "Warning: GetAverageOutput() NO SAMPLES IN SET." );
+                return avgOutput;
+            }
+
             for( Int32 i = 0; i < NumOutputs; ++i )
             {
                 avgOutput[i] = (byte)Func.Clamp( (Int32)( sums[i]/NumSamples ), 0, 255 );
