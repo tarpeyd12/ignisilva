@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace ignisilva
 {
-    class Func
+    static class Func
     {
         public static T Clamp<T>( T val, T min, T max ) where T : IComparable<T>
         {

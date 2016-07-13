@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace ignisilva
 {
-    class Hog
+    static class Hog
     {
         private static Color BytesToColor( byte[] colorBytes, Int32 index, Int32 depth )
         {
@@ -21,7 +21,7 @@ namespace ignisilva
             return Color.FromArgb( ImageFunctions.GetColorIndex( b ) );
         }
 
-        protected static float _get01AngleFromVxVy( float xG, float yG )
+        private static float _get01AngleFromVxVy( float xG, float yG )
         {
             float angle = (float)Math.Atan2( yG, xG );
             if( angle < 0.0f )
@@ -159,7 +159,7 @@ namespace ignisilva
             return output;
         }
 
-        protected static Int32 _get9BinValueFromn01Direction( float input )
+        private static Int32 _get9BinValueFromn01Direction( float input )
         {
             float uangle = input * 2.0f - 1.0f; // scale form 0 to 1 to -1 to 1
 

@@ -9,7 +9,7 @@ using System.Drawing.Imaging;
 
 namespace ignisilva
 {
-    class ImageFunctions
+    static class ImageFunctions
     {
         public static float[,] IdentityKernal
         {

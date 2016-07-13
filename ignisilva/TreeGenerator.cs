@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace ignisilva
 {
-    class TreeGenerator
+    static class TreeGenerator
     {
-        public static List<DecisionNode> Split( SampleDataSet sampleData, Int32[] indexList = null, Int32 maxDepth = -1, Int32 currentDepth = 0, List<DecisionNode> nodes = null )
+        public static List<DecisionNode> Split( SampleDataSet sampleData, Random random = null, Int32[] indexList = null, Int32 maxDepth = -1, Int32 currentDepth = 0, List<DecisionNode> nodes = null )
         {
             const bool debug = !true;
             if( nodes == null )
@@ -30,7 +30,7 @@ namespace ignisilva
 
 
                 if( debug ) Console.WriteLine( "Splitting .... " );
-                sampleData.GetBestSplit( out _splitIndex, out _splitValue );
+                sampleData.GetBestSplit( out _splitIndex, out _splitValue, random, indexList );
 
                 if( debug ) Console.WriteLine( "New Split Node [{0},{1},{2},[{3},{4}]]", nodes.Count, _splitIndex, _splitValue, -1, -1 );
 
@@ -43,10 +43,10 @@ namespace ignisilva
                 List<DecisionNode> res = null;
                 
                 node.Next[0] = nodes.Count;
-                res = Split( splitSets[0], indexList, maxDepth, currentDepth + 1, nodes );
+                res = Split( splitSets[0], random, indexList, maxDepth, currentDepth + 1, nodes );
 
                 node.Next[1] = nodes.Count;
-                res = Split( splitSets[1], indexList, maxDepth, currentDepth + 1, nodes );
+                res = Split( splitSets[1], random, indexList, maxDepth, currentDepth + 1, nodes );
                 
             }
 

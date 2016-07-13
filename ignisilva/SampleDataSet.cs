@@ -315,8 +315,22 @@ namespace ignisilva
         }
 
 
+        private class _SplitIGContainer
+        {
+            public Int32 splitIndex { get; }
+            public byte splitValue { get; }
+            public float infoGain { get; }
+
+            public _SplitIGContainer( Int32 _splitIndex, byte _splitValue, float _infoGain )
+            {
+                splitIndex = _splitIndex;
+                splitValue = _splitValue;
+                infoGain = _infoGain;
+            }
+        }
+
         // todo Figure out how to have this function retrun SampleDataSet[] with the set presplit so that we dont have to do that again.
-        public bool GetBestSplit( out Int32 splitIndex, out byte splitValue, Int32[] inputIndexes = null )
+        public bool GetBestSplit( out Int32 splitIndex, out byte splitValue, Random random = null, Int32[] inputIndexes = null )
         {
             if( NumUniqueOutputs <= 1 )
             {
@@ -324,47 +338,36 @@ namespace ignisilva
                 splitValue = 0;
                 return false;
             }
-            
+
+            if( random == null )
+            {
+                random = new Random();
+            }
+
             // TODO: use inline functions/delegete to reduce code duplication here.
+
+            List< _SplitIGContainer > splits = new List< _SplitIGContainer >();
 
             if( inputIndexes == null )
             {
-                float bestIG = GetInformationGainOfSplit( 0, (byte)0 );
-                splitIndex = 0;
-                splitValue = 0;
-                for( int i = 0; i < NumInputs; ++i )
-                {
-                    for( int v = 0; v < 256; ++v )
-                    {
-                        float ig = GetInformationGainOfSplit( i, (byte)v );
-                        if( ig > bestIG )
-                        {
-                            bestIG = ig;
-                            splitIndex = i;
-                            splitValue = (byte)v;
-                        }
-                    }
-                }
+                inputIndexes = Enumerable.Range( 0, NumInputs ).ToArray();
             }
-            else
+
+            foreach( Int32 i in inputIndexes )
             {
-                float bestIG = GetInformationGainOfSplit( inputIndexes[0], (byte)0 );
-                splitIndex = inputIndexes[0];
-                splitValue = 0;
-                foreach( Int32 i in inputIndexes )
+                for( int v = 0; v < 256; ++v )
                 {
-                    for( int v = 0; v < 256; ++v )
-                    {
-                        float ig = GetInformationGainOfSplit( i, (byte)v );
-                        if( ig > bestIG )
-                        {
-                            bestIG = ig;
-                            splitIndex = i;
-                            splitValue = (byte)v;
-                        }
-                    }
+                    splits.Add( new _SplitIGContainer( i, (byte)v, GetInformationGainOfSplit( i, (byte)v ) ) );
                 }
             }
+
+            splits.Sort( delegate ( _SplitIGContainer s1, _SplitIGContainer s2 ) { return s2.infoGain.CompareTo( s1.infoGain ); } );
+            List< _SplitIGContainer > bestSplits = splits.FindAll( delegate( _SplitIGContainer s ) { return s.infoGain == splits[0].infoGain; } );
+
+            _SplitIGContainer bestSplit = bestSplits[ random.Next(bestSplits.Count) ];
+
+            splitIndex = bestSplit.splitIndex;
+            splitValue = bestSplit.splitValue;
 
             return true;
         }

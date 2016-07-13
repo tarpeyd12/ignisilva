@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace ignisilva
 {
-    class ImageFeatureExtraction
+    static class ImageFeatureExtraction
     {
         public static void ExtractImageFeaturesFromDirectory( string folder, string outputFolder, bool[] imageTypesToSave = null )
         {
