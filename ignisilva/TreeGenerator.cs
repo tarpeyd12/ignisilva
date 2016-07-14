@@ -31,17 +31,26 @@ namespace ignisilva
 
                 if( debug ) Console.WriteLine( "Splitting .... " );
                 sampleData.GetBestSplit( out _splitIndex, out _splitValue, random, indexList );
+                
+                SampleDataSet[] splitSets = sampleData.SplitSet( _splitIndex, _splitValue );
 
-                if( debug ) Console.WriteLine( "New Split Node [{0},{1},{2},[{3},{4}]]", nodes.Count, _splitIndex, _splitValue, -1, -1 );
+                // do we need to be a leaf since the split makes a subset with no samples?
+                if( splitSets[0].NumSamples == 0 || splitSets[1].NumSamples == 0 )
+                {
+                    byte[] _output = sampleData.GetAverageOutput();
+                    if( debug ) Console.WriteLine( "New Leaf Node [{0},[{1}]]", nodes.Count, Func.ToCSV( _output ) );
+                    nodes.Add( new DecisionNode( nodes.Count, _output ) );
+                    return nodes;
+                }
 
                 DecisionNode node = new DecisionNode( nodes.Count, _splitIndex, _splitValue, -1, -1 );
 
-                nodes.Add( node );
-                
-                SampleDataSet[] splitSets = sampleData.SplitSet( _splitIndex, _splitValue );
-                
+                if( debug ) Console.WriteLine( "New Split Node [{0},{1},{2},[{3},{4}]]", nodes.Count, _splitIndex, _splitValue, -1, -1 );
+
                 List<DecisionNode> res = null;
-                
+
+                nodes.Add( node );
+
                 node.Next[0] = nodes.Count;
                 res = Split( splitSets[0], random, indexList, maxDepth, currentDepth + 1, nodes );
 

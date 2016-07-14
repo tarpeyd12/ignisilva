@@ -21,6 +21,8 @@ namespace ignisilva
             string folder = @"../../../images/";
             string outputFolder = @"../../../images/out/";
 
+            //outputFolder = @"Z:\trees\testOutput\";
+
             if( false )
             {
                 bool[] toGenImages = new bool[] { false, false, false, false, !true, true, false, false };
@@ -52,7 +54,7 @@ namespace ignisilva
             Console.WriteLine( "Generating sample Data ..." );
 
             Int32 _subsets = 256/4;
-            for( Int32 i = 0; i < 5000000; ++i )
+            for( Int32 i = 0; i < 1000000; ++i )
             {
                 byte[] input = new byte[2];
                 byte[] output = new byte[3];
@@ -104,7 +106,7 @@ namespace ignisilva
 
             XmlWriter xml = CreateXmlWriter( outputFolder + @"dataset.xml" );
             //sampleSet = sampleSet.RandomSubSet( (Int32)Math.Sqrt( sampleSet.NumSamples ), new Random(12345) );
-            sampleSet.WriteXml( xml, xmlEncoding );
+            sampleSet.RandomSubSet( Math.Min( sampleSet.NumSamples, 1000000 ), random ).WriteXml( xml, xmlEncoding );
             //sampleSet.WriteXml( xml, "z64" );
             //sampleSet.SubSetByOutput( 0 ).WriteXml( xml );
             xml.Flush();
@@ -142,17 +144,18 @@ namespace ignisilva
 
             {
                 DecisionForest f = new DecisionForest( 2, 3 );
-                for( int a = 0; a < 100; ++a )
+                for( int a = 0; a < 200; ++a )
                 {
                     Console.WriteLine( a );
                     //List<DecisionNode> nodeList = TreeGenerator.Split( sampleSet.RandomSubSet(1000,random), null, -8 );
-                    List<DecisionNode> nodeList = TreeGenerator.Split( sampleSet.RandomSubSet( (int)Math.Sqrt(sampleSet.NumSamples ), random ), random, null/*Func.UniqueRandomNumberRange( 2, 0, sampleSet.NumInputs + 1, random )*/, 16 );
+                    List<DecisionNode> nodeList = TreeGenerator.Split( sampleSet.RandomSubSet( (int)Math.Sqrt(sampleSet.NumSamples ), random ), random, null/*Func.UniqueRandomNumberRange( 2, 0, sampleSet.NumInputs + 1, random )*/, -1 );
                     
                     DecisionTree t = new DecisionTree( 2, 3 );
                     foreach( DecisionNode node in nodeList ) { t.AddNode( node ); }
 
                     f.AddTree( t );
-                    DecisionForestTestImage( random, f ).Save( outputFolder + "____0Foresttest__" + a.ToString( "D4" ) + ".png" );
+                    if(a%10 == 0)
+                        DecisionForestTestImage( random, f ).Save( outputFolder + "____0Foresttest__" + a.ToString( "D4" ) + ".png" );
                 }
                 TestXmlWriter( outputFolder + "0forest.xml", f );
                 DecisionForestTestImage( random, f ).Save( outputFolder + "____0Foresttest.png" );
@@ -258,8 +261,8 @@ namespace ignisilva
                     //byte[] outputs = forest.DecideR( inputs, 10, random );
                     //byte[] outputs = forest.DecideR( inputs, Math.Max( Math.Min( (int)Math.Sqrt(forest.NumTrees), forest.NumTrees ), 1 ), random );
                     //byte[] outputs = forest.DecideRN( inputs, 10, 5, random );
-                    //byte[] outputs = forest.DecideRN( inputs, Math.Max( Math.Min( (int)Math.Sqrt( forest.NumTrees ), forest.NumTrees ), 1 ), 5, random );
-                    byte[] outputs = forest.Decide( inputs );
+                    byte[] outputs = forest.DecideRN( inputs, Math.Max( Math.Min( (int)Math.Sqrt( forest.NumTrees ), forest.NumTrees ), 1 ), 10, random );
+                    //byte[] outputs = forest.Decide( inputs );
                     int pixelIndex = ImageFunctions.GetPixelIndex( x, y, imageTestSize.Width, 3 );
 
                     if( count++ % 100 == 0 )
