@@ -57,5 +57,22 @@ namespace ignisilva
             return output;
         }
 
+        public static byte[] AppendBytes( byte[] a, byte[] b )
+        {
+            byte[] output = new byte[ a.Length + b.Length ];
+
+            for( Int32 i = 0; i < a.Length; ++i )
+            {
+                output[i] = a[i];
+            }
+
+            for( Int32 i = a.Length; i < output.Length; ++i )
+            {
+                output[i] = b[i - a.Length];
+            }
+
+            return output;
+        }
+
     }
 }

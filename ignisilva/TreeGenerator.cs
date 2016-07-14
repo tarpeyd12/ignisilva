@@ -31,7 +31,7 @@ namespace ignisilva
 
                 if( debug ) Console.WriteLine( "Splitting .... " );
                 sampleData.GetBestSplit( out _splitIndex, out _splitValue, random, indexList );
-                
+
                 SampleDataSet[] splitSets = sampleData.SplitSet( _splitIndex, _splitValue );
 
                 // do we need to be a leaf since the split makes a subset with no samples?
@@ -56,7 +56,7 @@ namespace ignisilva
 
                 node.Next[1] = nodes.Count;
                 res = Split( splitSets[1], random, indexList, maxDepth, currentDepth + 1, nodes );
-                
+
             }
 
             if( currentDepth == 0 )
@@ -67,6 +67,20 @@ namespace ignisilva
             return nodes;
         }
 
-        //public static DecisionTree Generate(  )
+        public static DecisionTree Generate( SampleDataSet sampleData, Random random = null, Int32[] indexList = null, Int32 maxDepth = -1 )
+        {
+            List<DecisionNode> nodeList = TreeGenerator.Split( sampleData, random, indexList, -1 );
+
+            DecisionTree tree = new DecisionTree( sampleData.NumInputs, sampleData.NumOutputs );
+
+            foreach( DecisionNode node in nodeList )
+            {
+                tree.AddNode( node );
+            }
+
+            return tree;
+        }
+
+
     }
 }

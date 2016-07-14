@@ -302,5 +302,51 @@ namespace ignisilva
             return output;
         }
 
+
+        public static SampleDataSet ExtractPixelColorPositionData( string filename, Int32 maxImageDimention = 1024 )
+        {
+            FileInfo inputFileInfo = new FileInfo( filename );
+            FileInfo trainingFileInfo = new FileInfo( filename + "_trainingdata.png" );
+
+            /* Load The Images */
+            Console.WriteLine( "Load The Images" );
+            Bitmap image = new Bitmap( Image.FromFile( inputFileInfo.FullName ) );
+
+            double scale = Math.Min( (double)maxImageDimention / image.Width, (double)maxImageDimention / image.Height );
+
+            /* Scale the Image */
+            Console.WriteLine( "Scale the Image {0}", scale );
+            if( maxImageDimention > 0 && scale < 1.0 && scale > 0.0 )
+            {
+                image = new Bitmap( image, (int)( image.Width * scale ), (int)( image.Height * scale ) );
+            }
+            
+            /* extract image data */
+            Int32 bytesPerPixel = ImageFunctions.BytesPerPixelIn( image );
+            byte[] imageData = ImageFunctions.ExtractImageData( image );
+            
+            SampleDataSet output = new SampleDataSet( sizeof( Int32 ) * 2, bytesPerPixel );
+
+            for( Int32 y = 0; y < image.Size.Height;  ++y )
+            {
+                for( Int32 x = 0; x < image.Size.Width; ++x )
+                {
+                    Int32 pixelIndex = ImageFunctions.GetPixelIndex( x, y, image.Size.Width, bytesPerPixel );
+
+                    byte[] inputData = Func.AppendBytes( BitConverter.GetBytes( x ), BitConverter.GetBytes( y ) );
+                    byte[] outputData = new byte[bytesPerPixel];
+                    for( int color = 0; color < bytesPerPixel; ++color )
+                    {
+                        outputData[color] = imageData[pixelIndex + color];
+                    }
+
+                    output.AddData( new SampleData( inputData, outputData ) );
+                }
+            }
+
+            return output;
+        }
+
+
     }
 }
