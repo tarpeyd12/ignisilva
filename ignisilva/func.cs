@@ -57,6 +57,22 @@ namespace ignisilva
             return output;
         }
 
+        public static byte[] IntToBytes( int input )
+        {
+            byte[] direct = BitConverter.GetBytes( input );
+
+            /*byte[] output = new byte[4];
+
+            output[0] = (byte)Func.Clamp( input / Int32.MaxValue / 256,                   0, 255 );
+            output[1] = (byte)Func.Clamp( input / Int32.MaxValue / 256 / 256,             0, 255 );
+            output[2] = (byte)Func.Clamp( input / Int32.MaxValue / 256 / 256 / 256,       0, 255 );
+            output[3] = (byte)Func.Clamp( input / Int32.MaxValue / 256 / 256 / 256 / 256, 0, 255 );
+
+            Console.WriteLine( "IntToBytes({0}) = {1}", input, ToCSV(output) );*/
+
+            return direct;
+        }
+
         public static byte[] AppendBytes( byte[] a, byte[] b )
         {
             byte[] output = new byte[ a.Length + b.Length ];

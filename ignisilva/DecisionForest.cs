@@ -40,6 +40,7 @@ namespace ignisilva
         {
             if( forest.Count == 0 )
             {
+                Console.Write( "NO TREES IN FOREST ..." );
                 return null;
             }
 

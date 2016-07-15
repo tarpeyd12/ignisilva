@@ -17,11 +17,12 @@ namespace ignisilva
         static void Main( string[] args )
         {
             string xmlEncoding = "b64";
+            xmlEncoding = "csv";
 
             string folder = @"../../../images/";
             string outputFolder = @"../../../images/out/";
 
-            outputFolder = @"Z:\trees\testOutput\";
+            //outputFolder = @"Z:\trees\testOutput\";
 
             if( false )
             {
@@ -46,7 +47,9 @@ namespace ignisilva
 
             TestXmlWriter( outputFolder + @"forest.xml", forest, xmlEncoding );*/
 
-            SampleDataSet sampleSet = new SampleDataSet( 2, 3 );
+            Size __ImageSize = new Size( 1024, 1024 );
+
+            SampleDataSet sampleSet = new SampleDataSet( sizeof(Int32)*2, 3 );
 
             //sampleSet = ImageFeatureExtraction.ExtractHogDataFromTrainingImage( folder + @"7608091.jpg" );
             //sampleSet.AddData( ImageFeatureExtraction.ExtractHogDataFromTrainingImage( folder + @"final.png" ) );
@@ -56,7 +59,7 @@ namespace ignisilva
             Int32 _subsets = 256/4;
             for( Int32 i = 0; i < 5000000; ++i )
             {
-                byte[] input = new byte[2];
+                byte[] input;// = new byte[2];
                 byte[] output = new byte[3];
 
                 /*for( int c = 0; c < input.Length; ++c )
@@ -68,7 +71,7 @@ namespace ignisilva
                 output[0] = (byte)( 255 - ( (int)Func.Clamp( ImageFunctions.ColorValueDistance( new byte[] { 0, 0 }, input ), 0.0f, 255.0f ) / _subsets ) * _subsets ); // blue*/
 
                 int numSpirals = 6;
-                int jitterRadius = 25;
+                int jitterRadius = (int)(32.0/256.0*__ImageSize.Width);
                 
                 int p;
                 switch( p = random.Next( numSpirals ) )
@@ -89,15 +92,18 @@ namespace ignisilva
                 //float radius = (float)random.Next(1000)/1000.0f;
                 float radius = (float)random.NextDouble();
                 float angle = (radius) * (float)Math.PI * 2.0f + (float)p*(float)Math.PI*2.0f/(float)numSpirals;
-                
 
-                input[0] = (byte)Func.Clamp( Math.Cos( angle ) * radius * 128.0f + 128.0f, 0, 255 );
-                input[1] = (byte)Func.Clamp( Math.Sin( angle ) * radius * 128.0f + 128.0f, 0, 255 );
+                Int32[] intPos = new Int32[2];
 
-                radius = Func.Clamp( radius * ( 1.0f - 0.125f ) + 0.125f, 0.0f, 1.0f );
+                intPos[0] = (int)Func.Clamp( Math.Cos( angle ) * radius * __ImageSize.Width  / 2.0f + __ImageSize.Width  / 2.0f, 0, __ImageSize.Width );
+                intPos[1] = (int)Func.Clamp( Math.Sin( angle ) * radius * __ImageSize.Height / 2.0f + __ImageSize.Height / 2.0f, 0, __ImageSize.Height );
 
-                input[0] = (byte)Func.Clamp( input[0] + ( random.Next( jitterRadius*2 ) - jitterRadius ) * radius, 0, 255 );
-                input[1] = (byte)Func.Clamp( input[1] + ( random.Next( jitterRadius*2 ) - jitterRadius ) * radius, 0, 255 );
+                radius = Func.Clamp( radius * ( 1.0f - 0.25f ) + 0.25f, 0.0f, 1.0f );
+
+                intPos[0] = (int)Func.Clamp( intPos[0] + ( random.Next( jitterRadius*2 ) - jitterRadius ) * radius, 0, __ImageSize.Width );
+                intPos[1] = (int)Func.Clamp( intPos[1] + ( random.Next( jitterRadius*2 ) - jitterRadius ) * radius, 0, __ImageSize.Height );
+
+                input = Func.AppendBytes( Func.IntToBytes( intPos[0] ), Func.IntToBytes( intPos[1] ) );
 
                 SampleData sample = new SampleData( input, output );
 
@@ -147,25 +153,32 @@ namespace ignisilva
             //Console.WriteLine( "Entropy(9,5) = {0}.", SampleDataSet._Entropy( new Int32[] { 9, 5 } ) );
 
             {
-                const int totalTrees  = 1000;
-                const int treePerStep =  100;
+                const int totalTrees  = 10000;
+                const int treePerStep =   100;
 
-                DecisionForest forest = new DecisionForest( 2, 3 );
+                DecisionForest forest = new DecisionForest( sizeof(Int32)*2, 3 );
                 while( forest.NumTrees < totalTrees )
                 {
                     Console.WriteLine( "Generating {0} Trees ...", treePerStep );
 
                     object sync = new Object();
+                    object rand_sync = new Object();
+
+                    int tcount = 0;
 
                     Parallel.For( 0, treePerStep, new ParallelOptions { MaxDegreeOfParallelism = Math.Max( Environment.ProcessorCount - 2, 2 ) }, ( a ) =>
                     {
                         Random _random;
-                        lock( random ) { _random = new Random( random.Next() ); }
-                        DecisionTree tree = TreeGenerator.Generate( sampleSet.RandomSubSet( (int)Math.Sqrt( sampleSet.NumSamples ), _random ), _random, null, -1 );
+                        lock( rand_sync ) { _random = new Random( random.Next() ); }
+
+                        int[] indexes = Func.UniqueRandomNumberRange( (int)Math.Sqrt(sampleSet.NumInputs), 0, 8, _random );
+                        indexes = null;
+
+                        DecisionTree tree = TreeGenerator.Generate( sampleSet.RandomSubSet( (int)Math.Sqrt( sampleSet.NumSamples ), _random ), _random, indexes, -1 );
 
                         lock( sync )
                         {
-                            Console.Write( "{0},", a );
+                            if( ++tcount%( Math.Max(1,treePerStep/1000)) == 0 ) Console.Write( "{0:F2}%\r", (float)(tcount)/(float)treePerStep*100.0f );
                             forest.AddTree( tree );
                         }
                     }
@@ -173,10 +186,10 @@ namespace ignisilva
                     Console.WriteLine( "Done." );
                     Console.WriteLine( "{0} Total Trees Generated.", forest.NumTrees );
 
-                    DecisionForestTestImage( random, forest ).Save( outputFolder + "____0Foresttest__" + forest.NumTrees.ToString( "D4" ) + ".png" );
+                    DecisionForestTestImage( random, forest, __ImageSize ).Save( outputFolder + "____0Foresttest__" + forest.NumTrees.ToString( "D4" ) + ".png" );
                 }
                 TestXmlWriter( outputFolder + "0forest.xml", forest );
-                DecisionForestTestImage( random, forest ).Save( outputFolder + "____0Foresttest.png" );
+                DecisionForestTestImage( random, forest, __ImageSize ).Save( outputFolder + "____0Foresttest.png" );
             }
 
             using( StreamWriter file = new StreamWriter( outputFolder + @"outhisto.txt" ) )
@@ -255,7 +268,7 @@ namespace ignisilva
             return new Int32[] { bestIG_index, bestIG_value };
         }
 
-        static Bitmap DecisionForestTestImage( Random random, DecisionForest forest )
+        static Bitmap DecisionForestTestImage( Random random, DecisionForest forest, Size imageSize )
         {
             //DecisionForest forest = RandomTestForest( random, n );
 
@@ -264,18 +277,19 @@ namespace ignisilva
 
             Console.WriteLine( "Generating Image ..." );
 
-            Size imageTestSize = new Size( 256, 256 );
+            // input = Func.AppendBytes( BitConverter.GetBytes( intPos[0] ), BitConverter.GetBytes( intPos[1] ) );
+
+            Size imageTestSize = ( imageSize );
 
             byte[] pixelData = new byte[imageTestSize.Width * imageTestSize.Height * 3];
-
-            byte[] inputs = new byte[2];
+            
             int count = 0;
-            for( Int32 y = 0; y < imageTestSize.Width; ++y )
+            for( Int32 y = 0; y < imageTestSize.Height; ++y )
             {
-                inputs[1] = (byte)Func.Clamp( y, 0, 255 );
-                for( Int32 x = 0; x < imageTestSize.Height; ++x )
+                for( Int32 x = 0; x < imageTestSize.Width; ++x )
                 {
-                    inputs[0] = (byte)Func.Clamp( x, 0, 255 );
+                    //byte[] inputs = Func.AppendBytes( BitConverter.GetBytes( x ), BitConverter.GetBytes( y ) );
+                    byte[] inputs = Func.AppendBytes( Func.IntToBytes( x ), Func.IntToBytes( y ) );
                     //byte[] outputs = forest.DecideR( inputs, 10, random );
                     //byte[] outputs = forest.DecideR( inputs, Math.Max( Math.Min( (int)Math.Sqrt(forest.NumTrees), forest.NumTrees ), 1 ), random );
                     //byte[] outputs = forest.DecideRN( inputs, 10, 5, random );
@@ -283,11 +297,10 @@ namespace ignisilva
                     byte[] outputs = forest.Decide( inputs );
                     int pixelIndex = ImageFunctions.GetPixelIndex( x, y, imageTestSize.Width, 3 );
 
-                    if( count++ % 100 == 0 )
+                    if( count++ % 100 == 0 || pixelIndex == pixelData.Length-3 )
                     {
-                        Console.Write( "{0:F2}\r", (float)pixelIndex / (float)pixelData.Length * 100.0f );
+                        Console.Write( "{0:F2}% ({1}/{2}:{3})\r", (float)pixelIndex / (float)pixelData.Length * 100.0f, pixelIndex, pixelData.Length, outputs.Length );
                     }
-
                     for( Int32 color = 0; color < 3; ++color )
                     {
                         pixelData[pixelIndex + color] = outputs[color];
