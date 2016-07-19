@@ -9,7 +9,7 @@ using System.Xml;
 
 namespace ignisilva
 {
-    class XmlHelper
+    static class XmlHelper
     {
         public static XmlWriter WriteByteStringCSV( XmlWriter xml, byte[] byteData )
         {
@@ -67,5 +67,38 @@ namespace ignisilva
                     return WriteByteStringCSV( xml, byteData );
             }
         }
+
+
+        private static XmlWriter CreateXmlWriter( string filename )
+        {
+            XmlWriterSettings xmlSettings = new XmlWriterSettings();
+            xmlSettings.Indent = true;
+            xmlSettings.IndentChars = "\t";
+            xmlSettings.OmitXmlDeclaration = true;
+            return XmlWriter.Create( filename/*Console.Out*/, xmlSettings );
+        }
+
+        public static void WriteXml( string filename, IXmlWritable xml, string xmlEncoding = "b64" )
+        {
+            XmlWriter writer = null;
+
+            try
+            {
+                writer = CreateXmlWriter( filename );
+                
+                xml.WriteXml( writer, xmlEncoding );
+
+                writer.Flush();
+            }
+            finally
+            {
+                if( writer != null )
+                {
+                    writer.Close();
+                }
+            }
+        }
+
+
     }
 }

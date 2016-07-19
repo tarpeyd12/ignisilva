@@ -276,7 +276,7 @@ namespace ignisilva
 
             int numColors = Math.Min( numColors1, numColors2 );
 
-            byte[] outputData = new byte[imageData1.Length];
+            byte[] outputData = new byte[outputSize.Width * outputSize.Height * numColors];
 
             for( Int32 x = 0; x < outputSize.Width; ++x )
             {
@@ -567,6 +567,26 @@ namespace ignisilva
             }
 
             return GenerateImageFromData( newSize, outputData, input.PixelFormat );
+        }
+
+        public static Bitmap ScaleDownImage( Bitmap input, Int32 newSize, ref Size resultingSize )
+        {
+            Console.WriteLine( "Image Size: {0}", input.Size );
+
+            Bitmap image = input;
+
+            double scale = Math.Min( (double)newSize / (double)image.Width, (double)newSize / (double)image.Height );
+            
+            /* Scale the Image */
+            Console.WriteLine( "Scale the Image {0}", scale );
+            if( newSize > 0 && scale < 1.0 && scale > 0.0 )
+            {
+                image = new Bitmap( image, (int)( image.Width * scale ), (int)( image.Height * scale ) );
+            }
+
+            if( resultingSize != null ) resultingSize = image.Size;
+
+            return image;
         }
 
     }

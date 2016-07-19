@@ -16,8 +16,8 @@ namespace ignisilva
     {
         static void Main( string[] args )
         {
-            string xmlEncoding = "b64";
-            xmlEncoding = "csv";
+            string xmlEncoding = "csv";
+            //xmlEncoding = "csv";
 
             string folder = @"../../../images/";
             string outputFolder = @"../../../images/out/";
@@ -33,358 +33,134 @@ namespace ignisilva
 
             Random random = new Random();
 
-            /*DecisionForest forest = new DecisionForest( 2, 3 );
-            
-            for( int i = 0; i < 0; ++i  )
+            int hogWindowSize = 11;
+            int maxImageDimension = 1024;
+
+            DecisionForest forest = new DecisionForest( hogWindowSize * hogWindowSize * 9, 4 );
+
+            SampleDataSet trainingData = ImageFeatureExtraction.ExtractHogDataFromTrainingImage( folder + @"final.png", hogWindowSize, maxImageDimension, 4 );
+            trainingData.AddData( ImageFeatureExtraction.ExtractHogDataFromTrainingImage( folder + @"7608091.jpg", hogWindowSize, maxImageDimension, 4 ) );
+
+            XmlHelper.WriteXml( outputFolder + "dataset.xml", trainingData, xmlEncoding );
+
+            Console.WriteLine( "Generateing Trees ..." );
+
+            Int32 numThreads = 8;
+            Int32 treeDepth = 6;
+
+            while( forest.NumTrees < 1000 )
             {
-                while( forest.NumTrees < i*i+1 )
-                {
-                    forest.AddTree( RandomTestTree( random ) );
-                }
-                Console.Write( "{0}\n", i );
-                DecisionForestTestImage( random, forest ).Save( outputFolder + "____test" + i.ToString("D4") + ".png" );
-            }
-
-            TestXmlWriter( outputFolder + @"forest.xml", forest, xmlEncoding );*/
-
-            Size __ImageSize = new Size( 1024, 1024 );
-
-            SampleDataSet sampleSet = new SampleDataSet( sizeof(Int32)*2, 3 );
-
-            //sampleSet = ImageFeatureExtraction.ExtractHogDataFromTrainingImage( folder + @"7608091.jpg" );
-            //sampleSet.AddData( ImageFeatureExtraction.ExtractHogDataFromTrainingImage( folder + @"final.png" ) );
-
-            Console.WriteLine( "Generating sample Data ..." );
-
-            Int32 _subsets = 256/4;
-            for( Int32 i = 0; i < 5000000; ++i )
-            {
-                byte[] input;// = new byte[2];
-                byte[] output = new byte[3];
-
-                /*for( int c = 0; c < input.Length; ++c )
-                {
-                    input[c] = (byte)random.Next( 256 );
-                }
-                output[2] = (byte)(( ( input[0] / _subsets ) * _subsets )); // red
-                output[1] = (byte)(( ( input[1] / _subsets ) * _subsets )); // green
-                output[0] = (byte)( 255 - ( (int)Func.Clamp( ImageFunctions.ColorValueDistance( new byte[] { 0, 0 }, input ), 0.0f, 255.0f ) / _subsets ) * _subsets ); // blue*/
-
-                int numSpirals = 6;
-                int jitterRadius = (int)(32.0/256.0*__ImageSize.Width);
+                forest.AddTrees( TreeGenerator.GenerateForest( 100, trainingData, (int)Math.Sqrt( trainingData.NumSamples )*4, numThreads, random, null, null, treeDepth, numThreads == 1 ? 2 : 1 ) );
                 
-                int p;
-                switch( p = random.Next( numSpirals ) )
                 {
-                    /*case 0: output = new byte[] { 255, 0, 0 }; break;
-                    case 1: output = new byte[] { 0, 255, 0 }; break;
-                    case 2: output = new byte[] { 0, 0, 255 }; break;*/
-
-                    case 0: output = new byte[] { 128, 0, 128 }; break; // purple
-                    case 1: output = new byte[] { 0, 69, 255 }; break; // orangered
-                    case 2: output = new byte[] { 0, 0, 128 }; break; // maroon
-                    case 3: output = new byte[] { 0, 255, 255 }; break; // yellow
-                    case 4: output = new byte[] { 0, 0, 255 }; break; // red
-                    case 5: output = new byte[] { 234, 224, 16 }; break; // ? terquoise ?
-                    default: output = new byte[] { 128, 128, 128 }; break; // grey
-                }
-
-                //float radius = (float)random.Next(1000)/1000.0f;
-                float radius = (float)random.NextDouble();
-                float angle = (radius) * (float)Math.PI * 2.0f + (float)p*(float)Math.PI*2.0f/(float)numSpirals;
-
-                Int32[] intPos = new Int32[2];
-
-                intPos[0] = (int)Func.Clamp( Math.Cos( angle ) * radius * __ImageSize.Width  / 2.0f + __ImageSize.Width  / 2.0f, 0, __ImageSize.Width );
-                intPos[1] = (int)Func.Clamp( Math.Sin( angle ) * radius * __ImageSize.Height / 2.0f + __ImageSize.Height / 2.0f, 0, __ImageSize.Height );
-
-                radius = Func.Clamp( radius * ( 1.0f - 0.25f ) + 0.25f, 0.0f, 1.0f );
-
-                intPos[0] = (int)Func.Clamp( intPos[0] + ( random.Next( jitterRadius*2 ) - jitterRadius ) * radius, 0, __ImageSize.Width );
-                intPos[1] = (int)Func.Clamp( intPos[1] + ( random.Next( jitterRadius*2 ) - jitterRadius ) * radius, 0, __ImageSize.Height );
-
-                input = Func.AppendBytes( Func.IntToBytes( intPos[0] ), Func.IntToBytes( intPos[1] ) );
-
-                SampleData sample = new SampleData( input, output );
-
-                sampleSet.AddData( sample );
-            }
-
-            Console.WriteLine( "Done." );
-
-            Console.WriteLine( "Saving SubSet of the Sample Data." );
-            XmlWriter xml = CreateXmlWriter( outputFolder + @"dataset.xml" );
-            //sampleSet = sampleSet.RandomSubSet( (Int32)Math.Sqrt( sampleSet.NumSamples ), new Random(12345) );
-            sampleSet.RandomSubSet( Math.Min( sampleSet.NumSamples, 1000000 ), random ).WriteXml( xml, xmlEncoding );
-            //sampleSet.WriteXml( xml, "z64" );
-            //sampleSet.SubSetByOutput( 0 ).WriteXml( xml );
-            xml.Flush();
-            xml.Close();
-            Console.WriteLine( "Done." );
-
-            //float entropy1 = sampleSet.GetEntropy();
-            //Console.WriteLine( "SampleSetEntropy = {0:F6}.", entropy1 );
-
-            /*SampleDataSet[] splitSubSets1 = sampleSet.SplitSet( 0, 128 );
-            SampleDataSet[] splitSubSets2 = sampleSet.SplitSet( 1, 128 );
-
-            Console.WriteLine( "SampleSetEntropy(0,128,L) = {0:F6}, {1}", splitSubSets1[0].GetEntropy(), splitSubSets1[0].NumUniqueOutputs );
-            Console.WriteLine( "SampleSetEntropy(0,128,G) = {0:F6}, {1}", splitSubSets1[1].GetEntropy(), splitSubSets1[1].NumUniqueOutputs );
-            Console.WriteLine( "SampleSetEntropy(1,128,L) = {0:F6}, {1}", splitSubSets2[0].GetEntropy(), splitSubSets2[0].NumUniqueOutputs );
-            Console.WriteLine( "SampleSetEntropy(1,128,G) = {0:F6}, {1}", splitSubSets2[1].GetEntropy(), splitSubSets2[1].NumUniqueOutputs );*/
-
-            /*{
-                Int32[] spl0 = GetBestSplit( sampleSet );
-
-                SampleDataSet[] splitSets0 = sampleSet.SplitSet( spl0[0], (byte)spl0[1] );
-
-                Int32[] spl1 = GetBestSplit( splitSets0[0] );
-                Int32[] spl2 = GetBestSplit( splitSets0[1] );
-
-                SampleDataSet[] splitSets1 = splitSets0[0].SplitSet( spl1[0], (byte)spl1[1] );
-                SampleDataSet[] splitSets2 = splitSets0[1].SplitSet( spl2[0], (byte)spl2[1] );
-
-                Console.WriteLine( "[0,0]=[{0}]", Func.ToCSV( splitSets1[0].GetAverageOutput() ) );
-                Console.WriteLine( "[0,1]=[{0}]", Func.ToCSV( splitSets1[1].GetAverageOutput() ) );
-                Console.WriteLine( "[1,0]=[{0}]", Func.ToCSV( splitSets2[0].GetAverageOutput() ) );
-                Console.WriteLine( "[1,1]=[{0}]", Func.ToCSV( splitSets2[1].GetAverageOutput() ) );
-            }*/
-
-            //Console.WriteLine( "Entropy(9,5) = {0}.", SampleDataSet._Entropy( new Int32[] { 9, 5 } ) );
-
-            {
-                const int totalTrees  = 10000;
-                const int treePerStep =   100;
-
-                DecisionForest forest = new DecisionForest( sizeof(Int32)*2, 3 );
-                while( forest.NumTrees < totalTrees )
-                {
-                    Console.WriteLine( "Generating {0} Trees ...", treePerStep );
-
-                    object sync = new Object();
-                    object rand_sync = new Object();
-
-                    int tcount = 0;
-
-                    Parallel.For( 0, treePerStep, new ParallelOptions { MaxDegreeOfParallelism = Math.Max( Environment.ProcessorCount - 2, 2 ) }, ( a ) =>
+                    Parallel.Invoke(
+                    () =>
                     {
-                        Random _random;
-                        lock( rand_sync ) { _random = new Random( random.Next() ); }
-
-                        int[] indexes = Func.UniqueRandomNumberRange( (int)Math.Sqrt(sampleSet.NumInputs), 0, 8, _random );
-                        indexes = null;
-
-                        DecisionTree tree = TreeGenerator.Generate( sampleSet.RandomSubSet( (int)Math.Sqrt( sampleSet.NumSamples ), _random ), _random, indexes, -1 );
-
-                        lock( sync )
-                        {
-                            if( ++tcount%( Math.Max(1,treePerStep/1000)) == 0 ) Console.Write( "{0:F2}%\r", (float)(tcount)/(float)treePerStep*100.0f );
-                            forest.AddTree( tree );
-                        }
+                        XmlHelper.WriteXml( outputFolder + string.Format( "forest{0:D5}.xml", forest.NumTrees ), forest, xmlEncoding );
+                    },
+                    () =>
+                    {
+                        ClasifyAndSave( folder + @"final.png", outputFolder + string.Format( "classification_cube{0:D5}.png", forest.NumTrees ), forest, hogWindowSize, maxImageDimension );
+                    },
+                    () =>
+                    {
+                        ClasifyAndSave( folder + @"7608091.jpg", outputFolder + string.Format( "classification_sphr{0:D5}.png", forest.NumTrees ), forest, hogWindowSize, maxImageDimension );
                     }
                     );
-                    Console.WriteLine( "Done." );
-                    Console.WriteLine( "{0} Total Trees Generated.", forest.NumTrees );
-
-                    DecisionForestTestImage( random, forest, __ImageSize ).Save( outputFolder + "____0Foresttest__" + forest.NumTrees.ToString( "D4" ) + ".png" );
                 }
-                TestXmlWriter( outputFolder + "0forest.xml", forest );
-                DecisionForestTestImage( random, forest, __ImageSize ).Save( outputFolder + "____0Foresttest.png" );
             }
-
-            using( StreamWriter file = new StreamWriter( outputFolder + @"outhisto.txt" ) )
-            {
-
-                file.WriteLine( "OUTPUTS[" );
-                for( Int32 i = 0; i < sampleSet.NumInputs; ++i )
-                {
-                    file.Write( "({0})<", i );
-                    file.WriteLine( "" );
-                    Int32[,] inhisto = sampleSet.GetOutputHistogram( i );
-
-                    for( Int32 x = 0; x < inhisto.GetLength( 1 ); ++x )
-                    {
-                        //file.Write( "[{0}]", Convert.ToBase64String( sampleSet.GetUniqueOutput( x ) ) );
-                        file.Write( "[{0}]", Func.ToCSV( sampleSet.GetUniqueOutput( x ) ) );
-                        for( Int32 y = 0; y < inhisto.GetLength( 0 ); ++y )
-                        {
-                            //file.Write( "{0:X3},", inhisto[y, x] );
-                            file.Write( "{0}", inhisto[y, x] == 0 ? "." : "#" );
-                        }
-                        file.WriteLine( "" );
-                    }
-                    file.WriteLine( ">" );
-                }
-                file.WriteLine( "]" );
-
-                /*Int32[,,] outhisto = sampleSet.GetInputHistogram();
-
-                for( Int32 i = 0; i < sampleSet.NumInputs; ++i )
-                {
-                    file.Write( "({0})<", i );
-                    file.WriteLine( "" );
-                    for( Int32 x = 0; x < outhisto.GetLength( 2 ); ++x )
-                    {
-                        //file.Write( "[{0}]", Convert.ToBase64String( sampleSet.GetUniqueOutput( x ) ) );
-                        //file.Write( "[{0}]", Func.ToCSV( sampleSet.GetUniqueOutput( x ) ) );
-                        for( Int32 y = 0; y < outhisto.GetLength( 0 ); ++y )
-                        {
-                            file.Write( "{0:X3},", outhisto[y, i, x] );
-                            //file.Write( "{0}", outhisto[y, x] == 0 ? "." : "#" );
-                        }
-                        file.WriteLine( "" );
-                    }
-                    file.WriteLine( ">" );
-                }
-                file.WriteLine( ">" );*/
-
-                        /*file.WriteLine( "OUTPUTS[" );
-                        for( Int32 i = 0; i < sampleSet.NumInputs; ++i )
-                        {
-                            file.Write( "({0})<", i );
-                            file.WriteLine( "" );
-                            Int32[,] outminmax = sampleSet.GetOutputMinMaxOfInputIndex(i);
-                            for( Int32 x = 0; x < outminmax.GetLength(0); ++x )
-                            {
-                                file.WriteLine( "[{2}]:{0:D3},{1:D3}", outminmax[x, 0], outminmax[x, 1], Func.ToCSV( sampleSet.GetUniqueOutput( x ) ) );
-                            }
-                        }
-                        file.WriteLine( "]" );*/
-                    }
 
             GC.Collect();
 
-            Console.WriteLine( "Press [Return] to exit ...\a" );
+            Console.WriteLine( "Press [Return] to exit ...\a\a\a\a\a\a\a\a\a\a\a\a\a\a\a\a\a\a\a\a\a\a\a\a\a\a\a\a" );
             Console.ReadLine();
         }
 
-        static Int32[] GetBestSplit( SampleDataSet sampleSet )
+        
+        public static void ClasifyAndSave( string inputFilename, string outputFilename, DecisionForest forest, Int32 hogWindowSize = 11, Int32 maxImageDimension = 1024 )
         {
-            int bestIG_index = 0;
-            byte bestIG_value = 0;
-
-            sampleSet.GetBestSplit( out bestIG_index, out bestIG_value );
-               
-            return new Int32[] { bestIG_index, bestIG_value };
+            {
+                Bitmap inputImage = new Bitmap( Image.FromFile( inputFilename ) );
+                Bitmap classifiedImage = ClasificationToBitmap( ClasifyImage( inputImage, forest, hogWindowSize, maxImageDimension, forest.NumOutputs ), forest.NumOutputs );
+                Console.WriteLine( outputFilename + classifiedImage.Size );
+                Size s = new Size( 0, 0 );
+                Bitmap greyscaleInputImage = ImageFunctions.ScaleDownImage( ImageFunctions.MakeGrayscale3( inputImage ), maxImageDimension, ref s );
+                classifiedImage = ImageFunctions.MultiplyImages( classifiedImage, greyscaleInputImage );
+                classifiedImage.Save( outputFilename );
+            }
         }
 
-        static Bitmap DecisionForestTestImage( Random random, DecisionForest forest, Size imageSize )
+        public static byte[,][] ClasifyImage( Bitmap input, DecisionForest forest, Int32 featureSize = 11, Int32 maxImageDimention = 1024, Int32 bytesPerPixelOutput = 4 )
         {
-            //DecisionForest forest = RandomTestForest( random, n );
+            const int HOG_block_size = 8;
+            const int HOG_norm_size = 2;
 
-            Stopwatch stopwatch = new Stopwatch();
-            stopwatch.Start();
+            Size newsize = new Size( maxImageDimention, maxImageDimention );
 
-            Console.WriteLine( "Generating Image ..." );
+            Bitmap image = ImageFunctions.ScaleDownImage( input, maxImageDimention, ref newsize );
 
-            // input = Func.AppendBytes( BitConverter.GetBytes( intPos[0] ), BitConverter.GetBytes( intPos[1] ) );
 
-            Size imageTestSize = ( imageSize );
+            /* blur the image */
+            Console.WriteLine( "blur the image" );
+            Bitmap gaussian = image;
+            gaussian = ImageFunctions.ImageKernal( ImageFunctions.ImageKernal( gaussian, ImageFunctions.GaussianBlurXKernal, false, false ), ImageFunctions.GaussianBlurYKernal, false, false );
 
-            byte[] pixelData = new byte[imageTestSize.Width * imageTestSize.Height * 3];
+            /* Extract The HOG data from the Image */
+            Console.WriteLine( "Extract The HOG data from the Image" );
+            Bitmap hogInput = gaussian;
+
+            Size hogBinSize = new Size( HOG_block_size, HOG_block_size );
+
+            float[,,] gradientAngles = Hog.CalculateGradiantAngles( hogInput );
+            float[,,] binGradients = Hog.BinGradients( gradientAngles, hogBinSize );
+            binGradients = Hog.NormalizeBinnedGradients2( binGradients, new Size( HOG_norm_size, HOG_norm_size ) );
+            //binGradients = Hog.NormalizeBinnedGradients( binGradients );
             
-            int count = 0;
-            for( Int32 y = 0; y < imageTestSize.Height; ++y )
-            {
-                for( Int32 x = 0; x < imageTestSize.Width; ++x )
-                {
-                    //byte[] inputs = Func.AppendBytes( BitConverter.GetBytes( x ), BitConverter.GetBytes( y ) );
-                    byte[] inputs = Func.AppendBytes( Func.IntToBytes( x ), Func.IntToBytes( y ) );
-                    //byte[] outputs = forest.DecideR( inputs, 10, random );
-                    //byte[] outputs = forest.DecideR( inputs, Math.Max( Math.Min( (int)Math.Sqrt(forest.NumTrees), forest.NumTrees ), 1 ), random );
-                    //byte[] outputs = forest.DecideRN( inputs, 10, 5, random );
-                    //byte[] outputs = forest.DecideRN( inputs, Math.Max( Math.Min( (int)Math.Sqrt( forest.NumTrees ), forest.NumTrees ), 1 ), 10, random );
-                    byte[] outputs = forest.Decide( inputs );
-                    int pixelIndex = ImageFunctions.GetPixelIndex( x, y, imageTestSize.Width, 3 );
+            /* Extract the SampleData from the HOG */
+            Console.WriteLine( "Extract the SampleData from the HOG" );
 
-                    if( count++ % 100 == 0 || pixelIndex == pixelData.Length-3 )
+            byte[,][] output = new byte[binGradients.GetLength( 0 ), binGradients.GetLength( 1 )][];
+
+            for( Int32 y = 0; y < binGradients.GetLength( 1 ); ++y )
+            {
+                for( Int32 x = 0; x < binGradients.GetLength( 0 ); ++x )
+                {
+                    float cX = Func.Clamp( ( ( (float)( x ) + 0.5f ) * (float)( HOG_block_size ) ), 0, image.Size.Width - 1 );
+                    float cY = Func.Clamp( ( ( (float)( y ) + 0.5f ) * (float)( HOG_block_size ) ), 0, image.Size.Height - 1 );
+                    
+                    byte[] sampleInput = ImageFeatureExtraction.GetBytesInBoxFromHog( binGradients, x, y, featureSize );
+
+                    byte[] sampleOutput = forest.Decide( sampleInput );
+
+                    output[x, y] = Func.TruncateByteSequence( sampleOutput, bytesPerPixelOutput );
+
+                }
+            }
+            return output;
+        }
+
+        public static Bitmap ClasificationToBitmap( byte[,][] classification, Int32 bytesPerPixelOutput = 4 )
+        {
+            const int HOG_block_size = 8;
+
+            byte[] pixelData = new byte[classification.GetLength( 0 ) * classification.GetLength( 1 ) * bytesPerPixelOutput];
+
+            for( Int32 y = 0; y < classification.GetLength( 1 ); ++y )
+            {
+                for( Int32 x = 0; x < classification.GetLength( 0 ); ++x )
+                {
+                    Int32 pixelIndex = ImageFunctions.GetPixelIndex( x, y, classification.GetLength( 0 ), bytesPerPixelOutput );
+
+                    for( Int32 color = 0; color < bytesPerPixelOutput; ++color )
                     {
-                        Console.Write( "{0:F2}% ({1}/{2}:{3})\r", (float)pixelIndex / (float)pixelData.Length * 100.0f, pixelIndex, pixelData.Length, outputs.Length );
-                    }
-                    for( Int32 color = 0; color < 3; ++color )
-                    {
-                        pixelData[pixelIndex + color] = outputs[color];
+                        pixelData[pixelIndex + color] = classification[x, y][color];
                     }
                 }
             }
 
-            //Console.WriteLine( forest.Decide( new byte[] { (byte)random.Next( 255 ), (byte)random.Next( 255 ) } )[0] );
+            Size outputSize = new Size( classification.GetLength( 0 ), classification.GetLength( 1 ) );
 
-            //TestXmlWriter( forest );
-
-            Bitmap imageTest = ImageFunctions.GenerateImageFromData( imageTestSize, pixelData, PixelFormat.Format24bppRgb );
-            //imageTest.Save( outputFolder + "____test.png" );
-
-            stopwatch.Stop();
-            Console.WriteLine( "Done, in {0} seconds.", stopwatch.ElapsedMilliseconds / 1000.0f );
-
-            return imageTest;
-        }
-
-        static DecisionForest RandomTestForest( Random random, int num )
-        {
-            Console.WriteLine( "Generating Forest ..." );
-            DecisionForest forest = new DecisionForest( 2, 3 );
-
-            for( Int32 i = 0; i < num; ++i )
-            {
-                forest.AddTree( RandomTestTree( random ) );
-            }
-
-            Console.WriteLine( "Done." );
-            return forest;
-        }
-
-        static DecisionTree RandomTestTree( Random random )
-        {
-            DecisionTree tree = new DecisionTree( 2, 3 );
-            bool n1 = random.Next( 2 ) == 0 ? true : false;
-            tree.AddNode( new DecisionNode( 0, n1 ? 1 : 0, random.Next( 256 ), 1, 2 ) );
-            tree.AddNode( new DecisionNode( 1, n1 ? 0 : 1, random.Next( 256 ), 3, 4 ) );
-            tree.AddNode( new DecisionNode( 2, n1 ? 0 : 1, random.Next( 256 ), 5, 6 ) );
-            /*tree.AddNode( new DecisionNode( n1 ? 3 : 3, new byte[] { 255,   0,   0 } ) ); // blue
-            tree.AddNode( new DecisionNode( n1 ? 5 : 4, new byte[] {   0, 255,   0 } ) ); // green
-            tree.AddNode( new DecisionNode( n1 ? 4 : 5, new byte[] {   0,   0, 255 } ) ); // red
-            tree.AddNode( new DecisionNode( n1 ? 6 : 6, new byte[] {   0,   0,   0 } ) ); // black*/
-            tree.AddNode( new DecisionNode( n1 ? 3 : 3, new byte[] { 0, 255, 255 } ) ); // yellow
-            tree.AddNode( new DecisionNode( n1 ? 5 : 4, new byte[] { 128, 0, 128 } ) ); // purple
-            tree.AddNode( new DecisionNode( n1 ? 4 : 5, new byte[] { 0, 69, 255 } ) ); // orangered
-            tree.AddNode( new DecisionNode( n1 ? 6 : 6, new byte[] { 0, 0, 128 } ) ); // maroon
-            return tree;
-        }
-
-        static XmlWriter CreateXmlWriter( string filename )
-        {
-            XmlWriterSettings xmlSettings = new XmlWriterSettings();
-            xmlSettings.Indent = true;
-            xmlSettings.IndentChars = "\t";
-            xmlSettings.OmitXmlDeclaration = true;
-            return XmlWriter.Create( filename/*Console.Out*/, xmlSettings );
-        }
-
-        static void TestXmlWriter( string filename, DecisionForest forest, string xmlEncoding = "b64" )
-        {
-            XmlWriter writer = null;
-
-            try
-            {
-                writer = CreateXmlWriter( filename );
-
-                //writer.WriteStartElement( "SampleData" );
-
-                forest.WriteXml( writer, xmlEncoding );
-
-                //writer.WriteEndElement();
-
-                writer.Flush();
-            }
-            finally
-            {
-                if( writer != null )
-                {
-                    writer.Close();
-                }
-            }
+            return new Bitmap( ImageFunctions.GenerateImageFromData( outputSize, pixelData, bytesPerPixelOutput == 3 ? PixelFormat.Format24bppRgb : PixelFormat.Format32bppArgb ), new Size( outputSize.Width * HOG_block_size, outputSize.Height * HOG_block_size ) );
         }
 
     }

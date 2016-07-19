@@ -90,5 +90,26 @@ namespace ignisilva
             return output;
         }
 
+        public static byte[] TruncateByteSequence( byte[] input, Int32 length )
+        {
+            if( input.Length < length )
+            {
+                return null;
+            }
+            else if( input.Length == length )
+            {
+                return input;
+            }
+
+            byte[] output = new byte[length];
+
+            for( int i = 0; i < output.Length; ++i )
+            {
+                output[i] = input[i];
+            }
+            return output;
+        }
+
+
     }
 }

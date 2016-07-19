@@ -189,7 +189,7 @@ namespace ignisilva
             return ExtractHogDataFromTrainingImage( filename, 11 );
         }*/
 
-        public static SampleDataSet ExtractHogDataFromTrainingImage( string filename, Int32 featureSize = 11, Int32 maxImageDimention = 1024 )
+        public static SampleDataSet ExtractHogDataFromTrainingImage( string filename, Int32 featureSize = 11, Int32 maxImageDimention = 1024, Int32 bytesPerPixelOutput = 3 )
         {
             //const int maxImageDimention = -1024;
             const int HOG_block_size = 8;
@@ -223,7 +223,7 @@ namespace ignisilva
                     //trainingImage.Save( @"../../../images/out/" + trainingFileInfo.Name + @".png" );
                     //ImageFunctions.MultiplyImages( ImageFunctions.MakeGrayscale3(image), new Bitmap( trainingImage , image.Size) ).Save( @"../../../images/out/" + trainingFileInfo.Name + @"2.png" );
 
-                    image = new Bitmap( image,  (int)( image.Width * scale ), (int)( image.Height * scale )  );
+                    image = new Bitmap( image,  (int)( image.Width * scale ), (int)( image.Height * scale ) );
                     
                     //GC.Collect();
                 }
@@ -255,11 +255,10 @@ namespace ignisilva
                 {
                     for( Int32 x = 0; x < binGradients.GetLength( 0 ); ++x )
                     {
-                        float cX = Func.Clamp(( ( (float)( x ) + 0.5f ) * (float)( HOG_block_size ) ) ,0, trainingImage.Size.Width-1);
-                        float cY = Func.Clamp( ( ( (float)( y ) + 0.5f ) * (float)( HOG_block_size ) ),0, trainingImage.Size.Height-1);
+                        float cX = Func.Clamp( ( ( (float)( x ) + 0.5f ) * (float)( HOG_block_size ) ), 0, trainingImage.Size.Width  - 1 );
+                        float cY = Func.Clamp( ( ( (float)( y ) + 0.5f ) * (float)( HOG_block_size ) ), 0, trainingImage.Size.Height - 1 );
 
-                        byte[] sampleOutput = ImageFunctions.GetRawPixelFromImageData( trainingImageData, (Int32)cX, (Int32)cY, trainingImage.Size.Width, trainingImageColorDepth );
-
+                        byte[] sampleOutput = Func.TruncateByteSequence( ImageFunctions.GetRawPixelFromImageData( trainingImageData, (Int32)cX, (Int32)cY, trainingImage.Size.Width, trainingImageColorDepth ), bytesPerPixelOutput );
                         byte[] sampleInput = GetBytesInBoxFromHog( binGradients, x, y, featureSize );
                         
                         output.AddData( new SampleData( sampleInput, sampleOutput ) );
@@ -303,7 +302,7 @@ namespace ignisilva
         }
 
 
-        public static SampleDataSet ExtractPixelColorPositionData( string filename, Int32 maxImageDimention = 1024 )
+        public static SampleDataSet ExtractPixelColorPositionData( string filename, ref Size imageSize, Int32 maxImageDimention = 1024, Int32 maxColorDepth = 3 )
         {
             FileInfo inputFileInfo = new FileInfo( filename );
             FileInfo trainingFileInfo = new FileInfo( filename + "_trainingdata.png" );
@@ -312,7 +311,9 @@ namespace ignisilva
             Console.WriteLine( "Load The Images" );
             Bitmap image = new Bitmap( Image.FromFile( inputFileInfo.FullName ) );
 
-            double scale = Math.Min( (double)maxImageDimention / image.Width, (double)maxImageDimention / image.Height );
+            Console.WriteLine( "Image Size: {0}", image.Size );
+
+            double scale = Math.Min( (double)maxImageDimention / (double)image.Width, (double)maxImageDimention / (double)image.Height );
 
             /* Scale the Image */
             Console.WriteLine( "Scale the Image {0}", scale );
@@ -320,9 +321,14 @@ namespace ignisilva
             {
                 image = new Bitmap( image, (int)( image.Width * scale ), (int)( image.Height * scale ) );
             }
+
+            if( imageSize != null ) imageSize = image.Size;
             
+            Console.WriteLine( "Image Size: {0}", image.Size );
+
             /* extract image data */
-            Int32 bytesPerPixel = ImageFunctions.BytesPerPixelIn( image );
+            Int32 _trueBytesPerPixel = ImageFunctions.BytesPerPixelIn( image );
+            Int32 bytesPerPixel = Math.Min( _trueBytesPerPixel, maxColorDepth );
             byte[] imageData = ImageFunctions.ExtractImageData( image );
             
             SampleDataSet output = new SampleDataSet( sizeof( Int32 ) * 2, bytesPerPixel );
@@ -331,7 +337,7 @@ namespace ignisilva
             {
                 for( Int32 x = 0; x < image.Size.Width; ++x )
                 {
-                    Int32 pixelIndex = ImageFunctions.GetPixelIndex( x, y, image.Size.Width, bytesPerPixel );
+                    Int32 pixelIndex = ImageFunctions.GetPixelIndex( x, y, image.Size.Width, _trueBytesPerPixel );
 
                     byte[] inputData = Func.AppendBytes( BitConverter.GetBytes( x ), BitConverter.GetBytes( y ) );
                     byte[] outputData = new byte[bytesPerPixel];

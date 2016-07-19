@@ -112,6 +112,16 @@ namespace ignisilva
             return subSampleSet;
         }
 
+        public SampleData GetSample( Int32 index )
+        {
+            if( index >= NumSamples )
+            {
+                return null;
+            }
+
+            return dataSet[index];
+        }
+
         public UInt32 GetOutputHashCodeFromFlatOutputID( Int32 OutputID  )
         {
             return uniqueOutputSets.ToList()[OutputID].Key;
@@ -286,9 +296,11 @@ namespace ignisilva
             Int32[] numSamplesPerOutput = new Int32[NumUniqueOutputs];
             Int32 total = 0;
 
+            KeyValuePair<UInt32,List<SampleData>>[] flatUniqueOutputs = uniqueOutputSets.ToArray();
+
             for( int i = 0; i < NumUniqueOutputs; ++i )
             {
-                numSamplesPerOutput[i] = uniqueOutputSets.ToList()[i].Value.Count;
+                numSamplesPerOutput[i] = flatUniqueOutputs[i].Value.Count;
                 total += numSamplesPerOutput[i];
             }
             
@@ -321,24 +333,43 @@ namespace ignisilva
         }
 
 
-        private class _SplitIGContainer
+        private class _SplitIGContainer //: IComparable<_SplitIGContainer>
         {
             public Int32 splitIndex { get; }
             public byte splitValue { get; }
             public float infoGain { get; }
+            public Int32 byteSignificance { get; }
 
-            public _SplitIGContainer( Int32 _splitIndex, byte _splitValue, float _infoGain )
+            public _SplitIGContainer( Int32 _splitIndex, byte _splitValue, float _infoGain, Int32 _byteSignificance = -100 )
             {
                 splitIndex = _splitIndex;
                 splitValue = _splitValue;
                 infoGain = _infoGain;
+                byteSignificance = _byteSignificance;
             }
+
+            public override string ToString()
+            {
+                return "{" + string.Format( "{0,3:##0}", splitIndex ) + "," + string.Format( "{0,3:##0}", splitValue ) + "," + string.Format( "{0,7:##0.000}", infoGain ) + "," + string.Format( "{0,3:##0}", byteSignificance ) + "}";
+            }
+
+            /*public int CompareTo( _SplitIGContainer other )
+            {
+                //int infoComp = other.infoGain.CompareTo( infoGain );
+                int infoComp = other.byteSignificance.CompareTo( byteSignificance );
+                if( infoComp == 0 )
+                {
+                    return other.infoGain.CompareTo( infoGain );
+                    //return other.byteSignificance.CompareTo( byteSignificance );
+                }
+                return infoComp;
+            }*/
         }
 
         // todo Figure out how to have this function retrun SampleDataSet[] with the set presplit so that we dont have to do that again.
-        public bool GetBestSplit( out Int32 splitIndex, out byte splitValue, Random random = null, Int32[] inputIndexes = null )
+        public bool GetBestSplit( out Int32 splitIndex, out byte splitValue, Random random = null, Int32[] inputIndexes = null, Int32[] inputSignificance = null )
         {
-            if( NumUniqueOutputs <= 1 )
+            if( NumUniqueOutputs <= 1 || ( inputSignificance != null && ( inputSignificance.Length != NumInputs ) ) )
             {
                 splitIndex = -1;
                 splitValue = 0;
@@ -363,15 +394,23 @@ namespace ignisilva
             {
                 for( int v = 0; v < 256; ++v )
                 {
-                    splits.Add( new _SplitIGContainer( i, (byte)v, GetInformationGainOfSplit( i, (byte)v ) ) );
+                    splits.Add( new _SplitIGContainer( i, (byte)v, GetInformationGainOfSplit( i, (byte)v ), inputSignificance == null ? -5 : inputSignificance[i] ) );
                 }
             }
 
-            splits.Sort( delegate ( _SplitIGContainer s1, _SplitIGContainer s2 ) { return s2.infoGain.CompareTo( s1.infoGain ); } );
-            List< _SplitIGContainer > bestSplits = splits.FindAll( delegate( _SplitIGContainer s ) { return s.infoGain == splits[0].infoGain; } );
+            List<_SplitIGContainer> bestSplits = splits;
+            
+            bestSplits.Sort( delegate ( _SplitIGContainer s1, _SplitIGContainer s2 ) { return s2.infoGain.CompareTo( s1.infoGain ); } );
+            bestSplits = bestSplits.FindAll( delegate( _SplitIGContainer s ) { return s.infoGain == bestSplits[0].infoGain; } );
 
-            _SplitIGContainer bestSplit = bestSplits[ random.Next(bestSplits.Count) ];
+            if( inputSignificance != null )
+            {
+                bestSplits.Sort( delegate ( _SplitIGContainer s1, _SplitIGContainer s2 ) { return s2.byteSignificance.CompareTo( s1.byteSignificance ); } );
+                bestSplits = bestSplits.FindAll( delegate ( _SplitIGContainer s ) { return s.byteSignificance == bestSplits[0].byteSignificance; } );
+            }
 
+            _SplitIGContainer bestSplit = bestSplits[random != null ? random.Next( bestSplits.Count ) : 0];
+            
             splitIndex = bestSplit.splitIndex;
             splitValue = bestSplit.splitValue;
 

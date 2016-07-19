@@ -36,6 +36,16 @@ namespace ignisilva
             return true;
         }
 
+        public bool AddTrees( DecisionTree[] trees )
+        {
+            foreach( DecisionTree tree in trees )
+            {
+                AddTree( tree );
+            }
+
+            return true;
+        }
+
         public byte[] Decide( byte[] input )
         {
             if( forest.Count == 0 )
