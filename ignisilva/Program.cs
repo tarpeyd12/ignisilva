@@ -16,13 +16,16 @@ namespace ignisilva
     {
         static void Main( string[] args )
         {
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+
             string xmlEncoding = "csv";
             //xmlEncoding = "csv";
 
             string folder = @"../../../images/";
             string outputFolder = @"../../../images/out/";
 
-            //outputFolder = @"Z:\trees\testOutput\";
+            outputFolder = @"Z:\trees\testOutput\";
 
             if( false )
             {
@@ -38,19 +41,24 @@ namespace ignisilva
 
             DecisionForest forest = new DecisionForest( hogWindowSize * hogWindowSize * 9, 4 );
 
-            SampleDataSet trainingData = ImageFeatureExtraction.ExtractHogDataFromTrainingImage( folder + @"final.png", hogWindowSize, maxImageDimension, 4 );
-            trainingData.AddData( ImageFeatureExtraction.ExtractHogDataFromTrainingImage( folder + @"7608091.jpg", hogWindowSize, maxImageDimension, 4 ) );
+            string[] testFileNames = new string[] { @"final.png", @"7608091.jpg", @"SaifulHaque_GoldSphere.jpg" };
+
+            SampleDataSet trainingData = ImageFeatureExtraction.ExtractHogDataFromTrainingImage( folder + testFileNames[0], hogWindowSize, maxImageDimension, 4 );
+            trainingData.AddData( ImageFeatureExtraction.ExtractHogDataFromTrainingImage( folder + testFileNames[1], hogWindowSize, maxImageDimension, 4 ) );
 
             XmlHelper.WriteXml( outputFolder + "dataset.xml", trainingData, xmlEncoding );
 
             Console.WriteLine( "Generateing Trees ..." );
 
-            Int32 numThreads = 8;
+            Int32 numThreads = 2;
             Int32 treeDepth = 6;
+            Int32 treesPerBlock = 4;
+            Int32 numSamples = (int)Math.Sqrt( trainingData.NumSamples ) * 64;
 
-            while( forest.NumTrees < 1000 )
+            while( forest.NumTrees < 12 )
             {
-                forest.AddTrees( TreeGenerator.GenerateForest( 100, trainingData, (int)Math.Sqrt( trainingData.NumSamples )*4, numThreads, random, null, null, treeDepth, numThreads == 1 ? 2 : 1 ) );
+                Console.WriteLine( "Generating {0} trees for {1} samples ...", treesPerBlock, numSamples );
+                forest.AddTrees( TreeGenerator.GenerateForest( treesPerBlock, trainingData, numSamples, numThreads, random, null, null, treeDepth, numThreads == 1 ? 2 : 1 ) );
                 
                 {
                     Parallel.Invoke(
@@ -60,11 +68,15 @@ namespace ignisilva
                     },
                     () =>
                     {
-                        ClasifyAndSave( folder + @"final.png", outputFolder + string.Format( "classification_cube{0:D5}.png", forest.NumTrees ), forest, hogWindowSize, maxImageDimension );
+                        ClasifyAndSave( folder + testFileNames[0], outputFolder + string.Format( "classification_cube{0:D5}.png", forest.NumTrees ), forest, hogWindowSize, maxImageDimension );
                     },
                     () =>
                     {
-                        ClasifyAndSave( folder + @"7608091.jpg", outputFolder + string.Format( "classification_sphr{0:D5}.png", forest.NumTrees ), forest, hogWindowSize, maxImageDimension );
+                        ClasifyAndSave( folder + testFileNames[1], outputFolder + string.Format( "classification_sphr{0:D5}.png", forest.NumTrees ), forest, hogWindowSize, maxImageDimension );
+                    },
+                    () =>
+                    {
+                        ClasifyAndSave( folder + testFileNames[2], outputFolder + string.Format( "classification_othr{0:D5}.png", forest.NumTrees ), forest, hogWindowSize, maxImageDimension );
                     }
                     );
                 }
@@ -72,6 +84,8 @@ namespace ignisilva
 
             GC.Collect();
 
+            stopwatch.Stop();
+            Console.WriteLine( "Completed in {0} seconds.", (double)stopwatch.ElapsedMilliseconds / 1000.0 );
             Console.WriteLine( "Press [Return] to exit ...\a\a\a\a\a\a\a\a\a\a\a\a\a\a\a\a\a\a\a\a\a\a\a\a\a\a\a\a" );
             Console.ReadLine();
         }
@@ -83,9 +97,12 @@ namespace ignisilva
                 Bitmap inputImage = new Bitmap( Image.FromFile( inputFilename ) );
                 Bitmap classifiedImage = ClasificationToBitmap( ClasifyImage( inputImage, forest, hogWindowSize, maxImageDimension, forest.NumOutputs ), forest.NumOutputs );
                 Console.WriteLine( outputFilename + classifiedImage.Size );
-                Size s = new Size( 0, 0 );
-                Bitmap greyscaleInputImage = ImageFunctions.ScaleDownImage( ImageFunctions.MakeGrayscale3( inputImage ), maxImageDimension, ref s );
-                classifiedImage = ImageFunctions.MultiplyImages( classifiedImage, greyscaleInputImage );
+                if( true )
+                {
+                    Size s = new Size( 0, 0 );
+                    Bitmap greyscaleInputImage = ImageFunctions.ScaleDownImage( ImageFunctions.MakeGrayscale3( inputImage ), maxImageDimension, ref s );
+                    classifiedImage = ImageFunctions.MultiplyImages( classifiedImage, greyscaleInputImage );
+                }
                 classifiedImage.Save( outputFilename );
             }
         }
@@ -131,6 +148,7 @@ namespace ignisilva
                     byte[] sampleInput = ImageFeatureExtraction.GetBytesInBoxFromHog( binGradients, x, y, featureSize );
 
                     byte[] sampleOutput = forest.Decide( sampleInput );
+                    //byte[] sampleOutput = forest.DecideV( sampleInput );
 
                     output[x, y] = Func.TruncateByteSequence( sampleOutput, bytesPerPixelOutput );
 
@@ -160,7 +178,7 @@ namespace ignisilva
 
             Size outputSize = new Size( classification.GetLength( 0 ), classification.GetLength( 1 ) );
 
-            return new Bitmap( ImageFunctions.GenerateImageFromData( outputSize, pixelData, bytesPerPixelOutput == 3 ? PixelFormat.Format24bppRgb : PixelFormat.Format32bppArgb ), new Size( outputSize.Width * HOG_block_size, outputSize.Height * HOG_block_size ) );
+            return ImageFunctions.ScaleImageNearest( ImageFunctions.GenerateImageFromData( outputSize, pixelData, bytesPerPixelOutput == 3 ? PixelFormat.Format24bppRgb : PixelFormat.Format32bppArgb ), new Size( outputSize.Width * HOG_block_size, outputSize.Height * HOG_block_size ) );
         }
 
     }

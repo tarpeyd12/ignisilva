@@ -546,27 +546,15 @@ namespace ignisilva
             return newBitmap;
         }
 
-        public static Bitmap ScaleDownImageNearest( Bitmap input, Size newSize )
+        public static Bitmap ScaleImageNearest( Bitmap input, Size newSize )
         {
-            Int32 pixelDepth = BytesPerPixelIn( input );
-            byte[] inputData = ExtractImageData( input );
-            byte[] outputData = new byte[ newSize.Width * newSize.Height * pixelDepth ];
-
-            for( Int32 y = 0; y < newSize.Height; ++y )
+            Bitmap output = new Bitmap( newSize.Width, newSize.Height );
+            using( Graphics graphics = Graphics.FromImage( output ) )
             {
-                for( Int32 x = 0; x < newSize.Width; ++x )
-                {
-                    Int32 outputPixelIndex = GetPixelIndex( x, y, newSize.Width, pixelDepth );
-                    Int32 inputPixelIndex = GetPixelIndex( (Int32)Func.Clamp( (double)x/(double)newSize.Width*(double)input.Width, 0, input.Width - 1 ), (Int32)Func.Clamp( (double)y / (double)newSize.Height * (double)input.Height, 0, input.Height - 1 ), input.Width, pixelDepth );
-
-                    for( Int32 color = 0; color < pixelDepth; ++color )
-                    {
-                        outputData[outputPixelIndex + color] = inputData[inputPixelIndex + color];
-                    }
-                }
+                graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
+                graphics.DrawImage( input, 0, 0, newSize.Width, newSize.Height );
             }
-
-            return GenerateImageFromData( newSize, outputData, input.PixelFormat );
+            return output;
         }
 
         public static Bitmap ScaleDownImage( Bitmap input, Int32 newSize, ref Size resultingSize )

@@ -20,6 +20,7 @@ namespace ignisilva
 
         private List<SampleData> dataSet;
         private Dictionary<UInt32, List<SampleData>> uniqueOutputSets;
+        private byte[,] inputMinMax; 
 
         public SampleDataSet( Int32 numInputs, Int32 numOutputs )
         {
@@ -28,6 +29,8 @@ namespace ignisilva
 
             dataSet = new List<SampleData>();
             uniqueOutputSets = new Dictionary<UInt32, List<SampleData>>();
+
+            inputMinMax = null;
         }
 
         private SampleDataSet( Int32 numInputs, Int32 numOutputs, List<SampleData> data )
@@ -38,13 +41,15 @@ namespace ignisilva
             dataSet = new List<SampleData>();
             uniqueOutputSets = new Dictionary<UInt32, List<SampleData>>();
 
+            inputMinMax = null;
+
             foreach( SampleData sample in data )
             {
                 AddData( sample );
             }
         }
 
-        public bool AddData( SampleData data )
+        public bool AddData( SampleData data, bool minMax = true )
         {
             if( data.NumInputs != NumInputs || data.NumOutputs != NumOutputs )
             {
@@ -64,6 +69,26 @@ namespace ignisilva
                 List<SampleData> newList = new List<SampleData>();
                 newList.Add( data );
                 uniqueOutputSets.Add( outputHash, newList );
+            }
+
+            if( minMax )
+            {
+                if( inputMinMax != null )
+                {
+                    for( Int32 i = 0; i < NumInputs; ++i )
+                    {
+                        if( data.Input[i] < inputMinMax[i, 0] ) inputMinMax[i, 0] = data.Input[i];
+                        if( data.Input[i] > inputMinMax[i, 1] ) inputMinMax[i, 1] = data.Input[i];
+                    }
+                }
+                else
+                {
+                    inputMinMax = new byte[NumInputs, 2];
+                    for( Int32 i = 0; i < NumInputs; ++i )
+                    {
+                        inputMinMax[i, 0] = inputMinMax[i, 1] = data.Input[i];
+                    }
+                }
             }
 
             return true;
@@ -98,7 +123,7 @@ namespace ignisilva
             return subSampleSet;
         }
 
-        public SampleDataSet[] SplitSet( Int32 splitIndex, byte splitValue )
+        public SampleDataSet[] SplitSet( Int32 splitIndex, byte splitValue, bool minMax = true )
         {
             SampleDataSet[] subSampleSet = new SampleDataSet[2];
             subSampleSet[0] = new SampleDataSet( NumInputs, NumOutputs );
@@ -106,7 +131,7 @@ namespace ignisilva
 
             foreach( SampleData sample in dataSet )
             {
-                subSampleSet[sample.Input[splitIndex] < splitValue ? 0 : 1].AddData( sample );
+                subSampleSet[sample.Input[splitIndex] < splitValue ? 0 : 1].AddData( sample, minMax );
             }
 
             return subSampleSet;
@@ -316,7 +341,7 @@ namespace ignisilva
             float total = 0.0f;
 
             {
-                SampleDataSet[] splitSet = SplitSet( splitIndex, splitValue );
+                SampleDataSet[] splitSet = SplitSet( splitIndex, splitValue, false );
                 
                 foreach( SampleDataSet s in splitSet )
                 {
@@ -392,7 +417,8 @@ namespace ignisilva
 
             foreach( Int32 i in inputIndexes )
             {
-                for( int v = 0; v < 256; ++v )
+                //for( int v = 0; v < 256; ++v )
+                for( int v = inputMinMax[i, 0]; v <= inputMinMax[i, 1]; ++v )
                 {
                     splits.Add( new _SplitIGContainer( i, (byte)v, GetInformationGainOfSplit( i, (byte)v ), inputSignificance == null ? -5 : inputSignificance[i] ) );
                 }

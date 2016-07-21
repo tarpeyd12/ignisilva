@@ -218,7 +218,7 @@ namespace ignisilva
                 if( maxImageDimention > 0 && scale < 1.0 && scale > 0.0 )
                 {
                     //trainingImage = new Bitmap( trainingImage,  (int)(trainingImage.Width * scale ), (int)( trainingImage.Height * scale )  );
-                    trainingImage = ImageFunctions.ScaleDownImageNearest( trainingImage, new Size( (int)( trainingImage.Width * scale ), (int)( trainingImage.Height * scale ) ) );
+                    trainingImage = ImageFunctions.ScaleImageNearest( trainingImage, new Size( (int)( trainingImage.Width * scale ), (int)( trainingImage.Height * scale ) ) );
 
                     //trainingImage.Save( @"../../../images/out/" + trainingFileInfo.Name + @".png" );
                     //ImageFunctions.MultiplyImages( ImageFunctions.MakeGrayscale3(image), new Bitmap( trainingImage , image.Size) ).Save( @"../../../images/out/" + trainingFileInfo.Name + @"2.png" );

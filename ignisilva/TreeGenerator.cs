@@ -107,7 +107,7 @@ namespace ignisilva
             {
                 SampleDataSet subSet = sampleData.RandomSubSet( subSampleSetSize, randomGenerators[threadID] );
 
-                DecisionTree tree = Generate( subSet, randomGenerators[threadID], indexList, inputSignificanceList, maxDepth, printDebug > 1 );
+                DecisionTree tree = Generate( subSet, randomGenerators[threadID], indexList, inputSignificanceList, maxDepth, printDebug > 1 ? true : false );
 
                 lock( sync )
                 {

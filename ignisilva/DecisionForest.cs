@@ -162,6 +162,54 @@ namespace ignisilva
             return output;
         }
 
+        private struct _OutputCounter
+        {
+            public UInt32 count;
+            public byte[] output;
+        }
+
+        public byte[] DecideV( byte[] input )
+        {
+            if( forest.Count == 0 )
+            {
+                Console.Write( "NO TREES IN FOREST ..." );
+                return null;
+            }
+
+            HashTableHashing.IHashAlgorithm hasher = new HashTableHashing.MurmurHash2Simple();
+
+            Dictionary<UInt32, _OutputCounter> counts = new Dictionary<UInt32, _OutputCounter>();
+            
+            foreach( DecisionTree tree in forest )
+            {
+                byte[] result = tree.Decide( input );
+
+                if( result == null )
+                {
+                    continue;
+                }
+
+                UInt32 hash = hasher.Hash( result );    
+
+                if( !counts.ContainsKey( hash ) )
+                {
+                    _OutputCounter c = new _OutputCounter();
+                    c.count = 0;
+                    c.output = result;
+                    counts.Add( hash, c );
+                }
+
+                _OutputCounter c1 = counts[hash];
+                c1.count++;
+                counts[hash] = c1;
+            }
+
+            List<_OutputCounter> listCounts = counts.Values.ToList();
+            listCounts.Sort( delegate ( _OutputCounter c1, _OutputCounter c2 ) { return c2.count.CompareTo( c1.count ); } );
+
+            return listCounts[0].output;
+        }
+
         public XmlWriter WriteXml( XmlWriter xml, string fmt = "b64" )
         {
             xml.WriteStartElement( "forest" );
