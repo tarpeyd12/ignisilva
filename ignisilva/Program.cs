@@ -22,16 +22,19 @@ namespace ignisilva
             string xmlEncoding = "csv";
             //xmlEncoding = "csv";
 
-            string folder = @"../../../images/";
+            string imageFolder = @"../../../images/";
+            string trainingFolder = @"../../../images/trainingdata/";
             string outputFolder = @"../../../images/out/";
 
-            outputFolder = @"Z:\trees\testOutput\";
+            string trainingFileSuffix = @"_trainingdata.png";
+
+            //outputFolder = @"Z:\trees\testOutput\";
 
             if( false )
             {
                 bool[] toGenImages = new bool[] { false, false, false, false, !true, true, false, false };
 
-                ImageFeatureExtraction.ExtractImageFeaturesFromDirectory( folder, outputFolder, toGenImages );
+                ImageFeatureExtraction.ExtractImageFeaturesFromDirectory( imageFolder, outputFolder, toGenImages );
             }
 
             Random random = new Random();
@@ -43,19 +46,56 @@ namespace ignisilva
 
             string[] testFileNames = new string[] { @"final.png", @"7608091.jpg", @"SaifulHaque_GoldSphere.jpg" };
 
-            SampleDataSet trainingData = ImageFeatureExtraction.ExtractHogDataFromTrainingImage( folder + testFileNames[0], hogWindowSize, maxImageDimension, 4 );
-            trainingData.AddData( ImageFeatureExtraction.ExtractHogDataFromTrainingImage( folder + testFileNames[1], hogWindowSize, maxImageDimension, 4 ) );
+
+            List<FileInfo> Files = new List<FileInfo>();
+
+            {
+                string[] extensions = { @".jpg", @".jpeg", @".png", @".bmp", @".tiff"/*, @".psd"*/ };
+
+                DirectoryInfo d = new DirectoryInfo( imageFolder );
+
+                foreach( string ext in extensions )
+                {
+                    if( ext.Length < 2 ) continue;
+                    string extension = ext;
+                    if( '.' == extension[0] )
+                    {
+                        extension = "*" + extension;
+                    }
+                    else if( !( extension.StartsWith( "*." ) ) )
+                    {
+                        extension = "*." + extension;
+                    }
+
+                    Files.AddRange( d.GetFiles( extension ) );
+                    //Files.AddRange( d.GetFiles( extension, SearchOption.AllDirectories ) );
+                }
+
+                Files.Sort( delegate ( FileInfo t1, FileInfo t2 ) { return ( t1.Length.CompareTo( t2.Length ) ); } );
+            }
+
+            SampleDataSet trainingData = new SampleDataSet( hogWindowSize * hogWindowSize * 9, 4 );
+
+            foreach( FileInfo fileInfo in Files )
+            {
+                try
+                {
+                    Console.WriteLine( fileInfo );
+                    trainingData.AddData( ImageFeatureExtraction.ExtractHogDataFromTrainingImage( imageFolder + fileInfo.Name, trainingFolder + fileInfo.Name + trainingFileSuffix, hogWindowSize, maxImageDimension, 4 ) );
+                }
+                finally { }
+            }
 
             XmlHelper.WriteXml( outputFolder + "dataset.xml", trainingData, xmlEncoding );
 
             Console.WriteLine( "Generateing Trees ..." );
 
-            Int32 numThreads = 2;
-            Int32 treeDepth = 6;
-            Int32 treesPerBlock = 4;
+            Int32 numThreads = 8;
+            Int32 treeDepth = 10;
+            Int32 treesPerBlock = 8;
             Int32 numSamples = (int)Math.Sqrt( trainingData.NumSamples ) * 64;
 
-            while( forest.NumTrees < 12 )
+            while( forest.NumTrees < 16 )
             {
                 Console.WriteLine( "Generating {0} trees for {1} samples ...", treesPerBlock, numSamples );
                 forest.AddTrees( TreeGenerator.GenerateForest( treesPerBlock, trainingData, numSamples, numThreads, random, null, null, treeDepth, numThreads == 1 ? 2 : 1 ) );
@@ -68,15 +108,15 @@ namespace ignisilva
                     },
                     () =>
                     {
-                        ClasifyAndSave( folder + testFileNames[0], outputFolder + string.Format( "classification_cube{0:D5}.png", forest.NumTrees ), forest, hogWindowSize, maxImageDimension );
+                        ClasifyAndSave( imageFolder + testFileNames[0], outputFolder + string.Format( "classification_cube{0:D5}.png", forest.NumTrees ), forest, hogWindowSize, maxImageDimension );
                     },
                     () =>
                     {
-                        ClasifyAndSave( folder + testFileNames[1], outputFolder + string.Format( "classification_sphr{0:D5}.png", forest.NumTrees ), forest, hogWindowSize, maxImageDimension );
+                        ClasifyAndSave( imageFolder + testFileNames[1], outputFolder + string.Format( "classification_sphr{0:D5}.png", forest.NumTrees ), forest, hogWindowSize, maxImageDimension );
                     },
                     () =>
                     {
-                        ClasifyAndSave( folder + testFileNames[2], outputFolder + string.Format( "classification_othr{0:D5}.png", forest.NumTrees ), forest, hogWindowSize, maxImageDimension );
+                        ClasifyAndSave( imageFolder + testFileNames[2], outputFolder + string.Format( "classification_othr{0:D5}.png", forest.NumTrees ), forest, hogWindowSize, maxImageDimension );
                     }
                     );
                 }

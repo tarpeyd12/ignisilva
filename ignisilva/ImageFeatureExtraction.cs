@@ -189,7 +189,7 @@ namespace ignisilva
             return ExtractHogDataFromTrainingImage( filename, 11 );
         }*/
 
-        public static SampleDataSet ExtractHogDataFromTrainingImage( string filename, Int32 featureSize = 11, Int32 maxImageDimention = 1024, Int32 bytesPerPixelOutput = 3 )
+        public static SampleDataSet ExtractHogDataFromTrainingImage( string imageFilename, string trainingFilename, Int32 featureSize = 11, Int32 maxImageDimention = 1024, Int32 bytesPerPixelOutput = 3 )
         {
             //const int maxImageDimention = -1024;
             const int HOG_block_size = 8;
@@ -198,11 +198,11 @@ namespace ignisilva
             SampleDataSet output = null;
             try
             {
-                FileInfo inputFileInfo = new FileInfo( filename );
-                FileInfo trainingFileInfo = new FileInfo( filename + "_trainingdata.png" );
+                FileInfo inputFileInfo = new FileInfo( imageFilename );
+                FileInfo trainingFileInfo = new FileInfo( trainingFilename );
 
                 /* Load The Images */
-                Console.WriteLine( "Load The Images" );
+                Console.WriteLine( "Load The Images {0} {1}", inputFileInfo, trainingFileInfo );
                 Bitmap image = new Bitmap( Image.FromFile( inputFileInfo.FullName ) );
                 Bitmap trainingImage = new Bitmap( Image.FromFile( trainingFileInfo.FullName ) );
 
