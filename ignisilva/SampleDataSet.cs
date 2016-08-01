@@ -420,7 +420,8 @@ namespace ignisilva
                 //for( int v = 0; v < 256; ++v )
                 for( int v = inputMinMax[i, 0]; v <= inputMinMax[i, 1]; ++v )
                 {
-                    splits.Add( new _SplitIGContainer( i, (byte)v, GetInformationGainOfSplit( i, (byte)v ), inputSignificance == null ? -5 : inputSignificance[i] ) );
+                    float ig = GetInformationGainOfSplit( i, (byte)v );
+                    splits.Add( new _SplitIGContainer( i, (byte)v, ig, inputSignificance == null ? -5 : inputSignificance[i] ) );
                 }
             }
 

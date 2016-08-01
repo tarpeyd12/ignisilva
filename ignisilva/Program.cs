@@ -39,7 +39,7 @@ namespace ignisilva
 
             Random random = new Random();
 
-            int hogWindowSize = 11;
+            int hogWindowSize = 5;
             int maxImageDimension = 1024;
 
             DecisionForest forest = new DecisionForest( hogWindowSize * hogWindowSize * 9, 4 );
@@ -86,16 +86,20 @@ namespace ignisilva
                 finally { }
             }
 
+
+            Console.WriteLine( "Saving Sample Data {0}", outputFolder + "dataset.xml" );
             XmlHelper.WriteXml( outputFolder + "dataset.xml", trainingData, xmlEncoding );
 
             Console.WriteLine( "Generateing Trees ..." );
 
-            Int32 numThreads = 8;
-            Int32 treeDepth = 10;
-            Int32 treesPerBlock = 8;
+            bool voteBased = false;
+
+            Int32 numThreads = 2;
+            Int32 treeDepth = 16;
+            Int32 treesPerBlock = 4;
             Int32 numSamples = (int)Math.Sqrt( trainingData.NumSamples ) * 64;
 
-            while( forest.NumTrees < 16 )
+            while( forest.NumTrees < 128 )
             {
                 Console.WriteLine( "Generating {0} trees for {1} samples ...", treesPerBlock, numSamples );
                 forest.AddTrees( TreeGenerator.GenerateForest( treesPerBlock, trainingData, numSamples, numThreads, random, null, null, treeDepth, numThreads == 1 ? 2 : 1 ) );
@@ -108,15 +112,12 @@ namespace ignisilva
                     },
                     () =>
                     {
-                        ClasifyAndSave( imageFolder + testFileNames[0], outputFolder + string.Format( "classification_cube{0:D5}.png", forest.NumTrees ), forest, hogWindowSize, maxImageDimension );
-                    },
-                    () =>
-                    {
-                        ClasifyAndSave( imageFolder + testFileNames[1], outputFolder + string.Format( "classification_sphr{0:D5}.png", forest.NumTrees ), forest, hogWindowSize, maxImageDimension );
-                    },
-                    () =>
-                    {
-                        ClasifyAndSave( imageFolder + testFileNames[2], outputFolder + string.Format( "classification_othr{0:D5}.png", forest.NumTrees ), forest, hogWindowSize, maxImageDimension );
+                        //foreach( FileInfo fileInfo in Files )
+                        Parallel.ForEach( Files, new ParallelOptions { MaxDegreeOfParallelism = numThreads }, ( fileInfo ) =>
+                        {
+                            ClasifyAndSave( imageFolder + fileInfo.Name, outputFolder + string.Format( "classification_{1}_{0:D5}.png", forest.NumTrees, fileInfo.Name ), forest, hogWindowSize, maxImageDimension, voteBased );
+                        }
+                        );
                     }
                     );
                 }
@@ -131,11 +132,11 @@ namespace ignisilva
         }
 
         
-        public static void ClasifyAndSave( string inputFilename, string outputFilename, DecisionForest forest, Int32 hogWindowSize = 11, Int32 maxImageDimension = 1024 )
+        public static void ClasifyAndSave( string inputFilename, string outputFilename, DecisionForest forest, Int32 hogWindowSize = 11, Int32 maxImageDimension = 1024, bool voteBased = false )
         {
             {
                 Bitmap inputImage = new Bitmap( Image.FromFile( inputFilename ) );
-                Bitmap classifiedImage = ClasificationToBitmap( ClasifyImage( inputImage, forest, hogWindowSize, maxImageDimension, forest.NumOutputs ), forest.NumOutputs );
+                Bitmap classifiedImage = ClasificationToBitmap( ClasifyImage( inputImage, forest, hogWindowSize, maxImageDimension, forest.NumOutputs, voteBased ), forest.NumOutputs );
                 Console.WriteLine( outputFilename + classifiedImage.Size );
                 if( true )
                 {
@@ -147,7 +148,7 @@ namespace ignisilva
             }
         }
 
-        public static byte[,][] ClasifyImage( Bitmap input, DecisionForest forest, Int32 featureSize = 11, Int32 maxImageDimention = 1024, Int32 bytesPerPixelOutput = 4 )
+        public static byte[,][] ClasifyImage( Bitmap input, DecisionForest forest, Int32 featureSize = 11, Int32 maxImageDimention = 1024, Int32 bytesPerPixelOutput = 4, bool voteBased = false )
         {
             const int HOG_block_size = 8;
             const int HOG_norm_size = 2;
@@ -187,8 +188,15 @@ namespace ignisilva
                     
                     byte[] sampleInput = ImageFeatureExtraction.GetBytesInBoxFromHog( binGradients, x, y, featureSize );
 
-                    byte[] sampleOutput = forest.Decide( sampleInput );
-                    //byte[] sampleOutput = forest.DecideV( sampleInput );
+                    byte[] sampleOutput = null;
+                    if( !voteBased )
+                    {
+                        sampleOutput = forest.Decide( sampleInput );
+                    }
+                    else
+                    {
+                        sampleOutput = forest.DecideV( sampleInput );
+                    }
 
                     output[x, y] = Func.TruncateByteSequence( sampleOutput, bytesPerPixelOutput );
 
