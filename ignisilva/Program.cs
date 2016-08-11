@@ -39,8 +39,8 @@ namespace ignisilva
 
             Random random = new Random();
 
-            int hogWindowSize = 5;
-            int maxImageDimension = 1024;
+            int hogWindowSize = 11;
+            int maxImageDimension = 512;
 
             DecisionForest forest = new DecisionForest( hogWindowSize * hogWindowSize * 9, 4 );
 
@@ -92,34 +92,35 @@ namespace ignisilva
 
             Console.WriteLine( "Generateing Trees ..." );
 
-            bool voteBased = false;
+            bool adaptiveStrides = true;
 
-            Int32 numThreads = 2;
-            Int32 treeDepth = 16;
-            Int32 treesPerBlock = 4;
+            Int32 numThreads = 3;
+            Int32 treeDepth = -16;
+            Int32 treesPerBlock = 3;
             Int32 numSamples = (int)Math.Sqrt( trainingData.NumSamples ) * 64;
 
-            while( forest.NumTrees < 128 )
+            while( forest.NumTrees < 60 )
             {
                 Console.WriteLine( "Generating {0} trees for {1} samples ...", treesPerBlock, numSamples );
-                forest.AddTrees( TreeGenerator.GenerateForest( treesPerBlock, trainingData, numSamples, numThreads, random, null, null, treeDepth, numThreads == 1 ? 2 : 1 ) );
+                forest.AddTrees( TreeGenerator.GenerateForest( treesPerBlock, trainingData, numSamples, numThreads, random, null, null, treeDepth, adaptiveStrides, numThreads == 1 ? 2 : 1 ) );
                 
                 {
-                    Parallel.Invoke(
-                    () =>
+                    //Parallel.Invoke(
+                    //() =>
                     {
                         XmlHelper.WriteXml( outputFolder + string.Format( "forest{0:D5}.xml", forest.NumTrees ), forest, xmlEncoding );
-                    },
-                    () =>
+                    }//,
+                    //() =>
                     {
                         //foreach( FileInfo fileInfo in Files )
                         Parallel.ForEach( Files, new ParallelOptions { MaxDegreeOfParallelism = numThreads }, ( fileInfo ) =>
                         {
-                            ClasifyAndSave( imageFolder + fileInfo.Name, outputFolder + string.Format( "classification_{1}_{0:D5}.png", forest.NumTrees, fileInfo.Name ), forest, hogWindowSize, maxImageDimension, voteBased );
+                            ClasifyAndSave( imageFolder + fileInfo.Name, outputFolder + string.Format( "classification_{1}_A_{0:D5}.png", forest.NumTrees, fileInfo.Name ), forest, hogWindowSize, maxImageDimension, false );
+                            ClasifyAndSave( imageFolder + fileInfo.Name, outputFolder + string.Format( "classification_{1}_V_{0:D5}.png", forest.NumTrees, fileInfo.Name ), forest, hogWindowSize, maxImageDimension, true );
                         }
                         );
                     }
-                    );
+                    //);
                 }
             }
 

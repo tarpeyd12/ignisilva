@@ -392,7 +392,7 @@ namespace ignisilva
         }
 
         // todo Figure out how to have this function retrun SampleDataSet[] with the set presplit so that we dont have to do that again.
-        public bool GetBestSplit( out Int32 splitIndex, out byte splitValue, Random random = null, Int32[] inputIndexes = null, Int32[] inputSignificance = null )
+        public bool GetBestSplit( out Int32 splitIndex, out byte splitValue, Random random = null, Int32[] inputIndexes = null, Int32[] inputSignificance = null, byte splitCheckStride = 1 )
         {
             if( NumUniqueOutputs <= 1 || ( inputSignificance != null && ( inputSignificance.Length != NumInputs ) ) )
             {
@@ -417,8 +417,7 @@ namespace ignisilva
 
             foreach( Int32 i in inputIndexes )
             {
-                //for( int v = 0; v < 256; ++v )
-                for( int v = inputMinMax[i, 0]; v <= inputMinMax[i, 1]; ++v )
+                for( int v = inputMinMax[i, 0]; v <= inputMinMax[i, 1]; v += splitCheckStride )
                 {
                     float ig = GetInformationGainOfSplit( i, (byte)v );
                     splits.Add( new _SplitIGContainer( i, (byte)v, ig, inputSignificance == null ? -5 : inputSignificance[i] ) );

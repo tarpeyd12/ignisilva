@@ -15,6 +15,14 @@ namespace ignisilva
             else                                { return val; }
         }
 
+        public static void Swap<T>( ref T lhs, ref T rhs )
+        {
+            T temp;
+            temp = lhs;
+            lhs = rhs;
+            rhs = temp;
+        }
+
         public static Int32[] UniqueRandomNumberRange( Int32 numberOfOutputs, Int32 Min, Int32 Max, Random random )
         {
             HashSet<Int32> check = new HashSet<Int32>();

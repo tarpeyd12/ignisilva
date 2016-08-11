@@ -8,7 +8,7 @@ namespace ignisilva
 {
     static class TreeGenerator
     {
-        public static List<DecisionNode> Split( SampleDataSet sampleData, Random random = null, Int32[] indexList = null, Int32[] inputSignificanceList = null, Int32 maxDepth = -1, Int32 currentDepth = 0, List<DecisionNode> nodes = null, bool debug = false )
+        public static List<DecisionNode> Split( SampleDataSet sampleData, Random random = null, Int32[] indexList = null, Int32[] inputSignificanceList = null, Int32 maxDepth = -1, Int32 currentDepth = 0, List<DecisionNode> nodes = null, bool adaptiveStrides = true, bool debug = false )
         {
             if( nodes == null )
             {
@@ -33,9 +33,19 @@ namespace ignisilva
                 Int32 _splitIndex;
                 byte _splitValue;
 
+                //byte _splitStride = (byte)(Int32)(Math.Log(sampleData.NumSamples)/Math.Log(2.0));
 
-                if( debug ) Console.WriteLine( "Splitting {0} Samples to {1} Unique Outputs .... ", sampleData.NumSamples, sampleData.NumUniqueOutputs );
-                sampleData.GetBestSplit( out _splitIndex, out _splitValue, random, indexList, inputSignificanceList );
+                //_splitStride = (byte)(Int32)Math.Sqrt( _splitStride * _splitStride * _splitStride );
+
+                byte _splitStride = (byte)(Int32)(Math.Sqrt( Math.Pow( Math.Log(sampleData.NumSamples)/Math.Log(2.0), 3.0 ) ) );
+
+                //_splitStride *= 4;
+                //_splitStride >>= currentDepth;
+                _splitStride = (byte)Func.Clamp( _splitStride, 1, 128 );
+                //_splitStride = 1;
+
+                if( debug ) Console.WriteLine( "Splitting {0} Samples to {1} Unique Outputs by {2}/256.... ", sampleData.NumSamples, sampleData.NumUniqueOutputs, _splitStride );
+                sampleData.GetBestSplit( out _splitIndex, out _splitValue, random, indexList, inputSignificanceList, _splitStride );
 
                 SampleDataSet[] splitSets = sampleData.SplitSet( _splitIndex, _splitValue );
 
@@ -56,11 +66,18 @@ namespace ignisilva
 
                 nodes.Add( node );
 
-                node.Next[0] = nodes.Count;
-                res = Split( splitSets[0], random, indexList, inputSignificanceList, maxDepth, currentDepth + 1, nodes, debug );
+                byte[] order = new byte[] { 0, 1 };
 
-                node.Next[1] = nodes.Count;
-                res = Split( splitSets[1], random, indexList, inputSignificanceList, maxDepth, currentDepth + 1, nodes, debug );
+                if( splitSets[1].NumSamples > splitSets[0].NumSamples )
+                {
+                    Func.Swap( ref order[0], ref order[1] );
+                }
+
+                node.Next[order[0]] = nodes.Count;
+                res = Split( splitSets[order[0]], random, indexList, inputSignificanceList, maxDepth, currentDepth + 1, nodes, adaptiveStrides, debug );
+
+                node.Next[order[1]] = nodes.Count;
+                res = Split( splitSets[order[1]], random, indexList, inputSignificanceList, maxDepth, currentDepth + 1, nodes, adaptiveStrides, debug );
 
                 //GC.Collect();
             }
@@ -73,9 +90,9 @@ namespace ignisilva
             return nodes;
         }
 
-        public static DecisionTree Generate( SampleDataSet sampleData, Random random = null, Int32[] indexList = null, Int32[] inputSignificanceList = null, Int32 maxDepth = -1, bool printDebug = false )
+        public static DecisionTree Generate( SampleDataSet sampleData, Random random = null, Int32[] indexList = null, Int32[] inputSignificanceList = null, Int32 maxDepth = -1, bool adaptiveStrides = true, bool printDebug = false )
         {
-            List<DecisionNode> nodeList = TreeGenerator.Split( sampleData, random, indexList, inputSignificanceList, maxDepth, 0, null, printDebug );
+            List<DecisionNode> nodeList = TreeGenerator.Split( sampleData, random, indexList, inputSignificanceList, maxDepth, 0, null, adaptiveStrides, printDebug );
 
             DecisionTree tree = new DecisionTree( sampleData.NumInputs, sampleData.NumOutputs );
 
@@ -88,7 +105,7 @@ namespace ignisilva
         }
 
 
-        public static DecisionTree[] GenerateForest( Int32 numTrees, SampleDataSet sampleData, Int32 subSampleSetSize, Int32 numThreads = 1, Random random = null, Int32[] indexList = null, Int32[] inputSignificanceList = null, Int32 maxDepth = -1, int printDebug = 0 )
+        public static DecisionTree[] GenerateForest( Int32 numTrees, SampleDataSet sampleData, Int32 subSampleSetSize, Int32 numThreads = 1, Random random = null, Int32[] indexList = null, Int32[] inputSignificanceList = null, Int32 maxDepth = -1, bool adaptiveStrides = true, int printDebug = 0 )
         {
             DecisionTree[] trees = new DecisionTree[numTrees];
             Random[] randomGenerators = new Random[numTrees];
@@ -107,7 +124,7 @@ namespace ignisilva
             {
                 SampleDataSet subSet = sampleData.RandomSubSet( subSampleSetSize, randomGenerators[threadID] );
 
-                DecisionTree tree = Generate( subSet, randomGenerators[threadID], indexList, inputSignificanceList, maxDepth, printDebug > 1 ? true : false );
+                DecisionTree tree = Generate( subSet, randomGenerators[threadID], indexList, inputSignificanceList, maxDepth, adaptiveStrides, printDebug > 1 ? true : false );
 
                 lock( sync )
                 {
