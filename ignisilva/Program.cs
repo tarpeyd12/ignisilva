@@ -30,17 +30,18 @@ namespace ignisilva
 
             //outputFolder = @"Z:\trees\testOutput\";
 
-            if( false )
+            int hogWindowSize = 11;
+            int maxImageDimension = 1024;
+
+            if( !false )
             {
                 bool[] toGenImages = new bool[] { false, false, false, false, !true, true, false, false };
 
-                ImageFeatureExtraction.ExtractImageFeaturesFromDirectory( imageFolder, outputFolder, toGenImages );
+                ImageFeatureExtraction.ExtractImageFeaturesFromDirectory( imageFolder, outputFolder, "classification_", toGenImages, maxImageDimension );
             }
 
             Random random = new Random();
-
-            int hogWindowSize = 11;
-            int maxImageDimension = 512;
+            
 
             DecisionForest forest = new DecisionForest( hogWindowSize * hogWindowSize * 9, 4 );
 
@@ -94,12 +95,12 @@ namespace ignisilva
 
             bool adaptiveStrides = true;
 
-            Int32 numThreads = 3;
+            Int32 numThreads = 2;
             Int32 treeDepth = -16;
-            Int32 treesPerBlock = 3;
+            Int32 treesPerBlock = 10;
             Int32 numSamples = (int)Math.Sqrt( trainingData.NumSamples ) * 64;
 
-            while( forest.NumTrees < 60 )
+            while( forest.NumTrees < 500 )
             {
                 Console.WriteLine( "Generating {0} trees for {1} samples ...", treesPerBlock, numSamples );
                 forest.AddTrees( TreeGenerator.GenerateForest( treesPerBlock, trainingData, numSamples, numThreads, random, null, null, treeDepth, adaptiveStrides, numThreads == 1 ? 2 : 1 ) );

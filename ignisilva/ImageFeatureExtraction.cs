@@ -12,7 +12,7 @@ namespace ignisilva
 {
     static class ImageFeatureExtraction
     {
-        public static void ExtractImageFeaturesFromDirectory( string folder, string outputFolder, bool[] imageTypesToSave = null )
+        public static void ExtractImageFeaturesFromDirectory( string folder, string outputFolder, string outputFilePrefix = "hog_", bool[] imageTypesToSave = null, int maxImageDimention = -1024 )
         {
             Stopwatch totalStopwatch = Stopwatch.StartNew();
 
@@ -21,7 +21,7 @@ namespace ignisilva
 
             string[] extensions = { @".jpg", @".jpeg", @".png", @".bmp", @".tiff"/*, @".psd"*/ };
 
-            int maxImageDimention = -1024;
+            //int maxImageDimention = -1024;
             int HOG_block_size = 8;
             int HOG_norm_size = 2;
 
@@ -59,7 +59,7 @@ namespace ignisilva
             //foreach( FileInfo fileinfo in Files )
             Parallel.ForEach( Files, ( fileinfo ) =>
             {
-                ExtractImageFeatures( fileinfo, maxImageDimention, outputFolder, HOG_block_size, HOG_norm_size, imageTypesToSave );
+                ExtractImageFeatures( fileinfo, maxImageDimention, outputFolder, outputFilePrefix, HOG_block_size, HOG_norm_size, imageTypesToSave );
             }
             );
 
@@ -71,7 +71,7 @@ namespace ignisilva
 
         }
 
-        public static void ExtractImageFeatures( FileInfo fileinfo, int maxImageDimention, string outputFolder, int HOG_block_size, int HOG_norm_size, bool[] imageTypesToSave )
+        public static void ExtractImageFeatures( FileInfo fileinfo, int maxImageDimention, string outputFolder, string outputFilePrefix, int HOG_block_size, int HOG_norm_size, bool[] imageTypesToSave )
         {
             int itts = 0;
 
@@ -99,7 +99,7 @@ namespace ignisilva
 
             if( imageTypesToSave[itts++] || !true )
             {
-                image.Save( outputFolder + fileinfo.Name + "_" + itts + "00_scaled.jpg", jpgCodec, jpgQuality );
+                image.Save( outputFolder + outputFilePrefix + fileinfo.Name + "_" + itts + "00_scaled.jpg", jpgCodec, jpgQuality );
             }
 
 
@@ -109,17 +109,17 @@ namespace ignisilva
             //gaussian = ImageProcessing.ImageKernal( ImageProcessing.ImageKernal( gaussian, ImageProcessing.GaussianBlurFastXKernal, false, progressPrint ), ImageProcessing.GaussianBlurFastYKernal, false, progressPrint );
             if( imageTypesToSave[itts++] || !true )
             {
-                gaussian.Save( outputFolder + fileinfo.Name + "_" + itts + "01_gaussian.jpg", jpgCodec, jpgQuality );
+                gaussian.Save( outputFolder + outputFilePrefix + fileinfo.Name + "_" + itts + "01_gaussian.jpg", jpgCodec, jpgQuality );
             }
 
             if( imageTypesToSave[itts++] || !true )
             {
                 Bitmap[] sobel = new Bitmap[4];
 
-                ( sobel[0] = ImageFunctions.ImageKernal( gaussian, ImageFunctions.SobelXKernal,  false, progressPrint ) ).Save( outputFolder + fileinfo.Name + "_" + itts + "01_sobel_x.jpg",  jpgCodec, jpgQuality );
-                ( sobel[1] = ImageFunctions.ImageKernal( gaussian, ImageFunctions.SobelYKernal,  false, progressPrint ) ).Save( outputFolder + fileinfo.Name + "_" + itts + "02_sobel_y.jpg",  jpgCodec, jpgQuality );
-                ( sobel[2] = ImageFunctions.ImageKernal( gaussian, ImageFunctions.SobelNXKernal, false, progressPrint ) ).Save( outputFolder + fileinfo.Name + "_" + itts + "03_sobel_xn.jpg", jpgCodec, jpgQuality );
-                ( sobel[3] = ImageFunctions.ImageKernal( gaussian, ImageFunctions.SobelNYKernal, false, progressPrint ) ).Save( outputFolder + fileinfo.Name + "_" + itts + "04_sobel_yn.jpg", jpgCodec, jpgQuality );
+                ( sobel[0] = ImageFunctions.ImageKernal( gaussian, ImageFunctions.SobelXKernal,  false, progressPrint ) ).Save( outputFolder + outputFilePrefix + fileinfo.Name + "_" + itts + "01_sobel_x.jpg",  jpgCodec, jpgQuality );
+                ( sobel[1] = ImageFunctions.ImageKernal( gaussian, ImageFunctions.SobelYKernal,  false, progressPrint ) ).Save( outputFolder + outputFilePrefix + fileinfo.Name + "_" + itts + "02_sobel_y.jpg",  jpgCodec, jpgQuality );
+                ( sobel[2] = ImageFunctions.ImageKernal( gaussian, ImageFunctions.SobelNXKernal, false, progressPrint ) ).Save( outputFolder + outputFilePrefix + fileinfo.Name + "_" + itts + "03_sobel_xn.jpg", jpgCodec, jpgQuality );
+                ( sobel[3] = ImageFunctions.ImageKernal( gaussian, ImageFunctions.SobelNYKernal, false, progressPrint ) ).Save( outputFolder + outputFilePrefix + fileinfo.Name + "_" + itts + "04_sobel_yn.jpg", jpgCodec, jpgQuality );
 
             }
 
@@ -128,12 +128,12 @@ namespace ignisilva
                 Bitmap sharp = image;
                 sharp = ImageFunctions.ImageKernal( sharp, ImageFunctions.SharpenKernal, false, progressPrint );
                 //sharp = ImageProcessing.ImageKernal( sharp, ImageProcessing.IdentityKernal );
-                sharp.Save( outputFolder + fileinfo.Name + "_" + itts + "02_sharp.jpg", jpgCodec, jpgQuality );
+                sharp.Save( outputFolder + outputFilePrefix + fileinfo.Name + "_" + itts + "02_sharp.jpg", jpgCodec, jpgQuality );
             }
 
             if( imageTypesToSave[itts++] || !true )
             {
-                ImageFunctions.MakeGrayscale3( image ).Save( outputFolder + fileinfo.Name + "_" + itts + "03_gray.jpg", jpgCodec, jpgQuality );
+                ImageFunctions.MakeGrayscale3( image ).Save( outputFolder + outputFilePrefix + fileinfo.Name + "_" + itts + "03_gray.jpg", jpgCodec, jpgQuality );
             }
 
             if( imageTypesToSave[itts++] || true )
@@ -155,27 +155,27 @@ namespace ignisilva
 
                 Bitmap hogOutput = Hog.BinGradientsToBitmap( binGradients, hogBinSize, darkenedBackdropImage );
 
-                hogOutput = ImageFunctions.AddImages( hogOutput, ImageFunctions.ImageKernal( backdropImage, new float[,] { { 1.0f/16.0f } } ) );
+                hogOutput = ImageFunctions.AddImages( hogOutput, ImageFunctions.ImageKernal( backdropImage, new float[,] { { 1.0f/2.0f } } ) );
 
-                hogOutput.Save( outputFolder + fileinfo.Name + "_" + itts + "04_hogV.png" );
+                hogOutput.Save( outputFolder + outputFilePrefix + fileinfo.Name + "_" + itts + "04_hogV.png" );
             }
 
             if( imageTypesToSave[itts++] || !true )
             {
-                ImageFunctions.ReduceImageColors( gaussian, 2,   false, progressPrint ).Save( outputFolder + fileinfo.Name + "_" + itts + "06_reduced_2.jpg",   jpgCodec, jpgQuality );
-                ImageFunctions.ReduceImageColors( gaussian, 4,   false, progressPrint ).Save( outputFolder + fileinfo.Name + "_" + itts + "07_reduced_4.jpg",   jpgCodec, jpgQuality );
-                ImageFunctions.ReduceImageColors( gaussian, 8,   false, progressPrint ).Save( outputFolder + fileinfo.Name + "_" + itts + "08_reduced_8.jpg",   jpgCodec, jpgQuality );
-                ImageFunctions.ReduceImageColors( gaussian, 16,  false, progressPrint ).Save( outputFolder + fileinfo.Name + "_" + itts + "09_reduced_16.jpg",  jpgCodec, jpgQuality );
-                ImageFunctions.ReduceImageColors( gaussian, 32,  false, progressPrint ).Save( outputFolder + fileinfo.Name + "_" + itts + "10_reduced_32.jpg",  jpgCodec, jpgQuality );
-                ImageFunctions.ReduceImageColors( gaussian, 64,  false, progressPrint ).Save( outputFolder + fileinfo.Name + "_" + itts + "11_reduced_64.jpg",  jpgCodec, jpgQuality );
-                ImageFunctions.ReduceImageColors( gaussian, 128, false, progressPrint ).Save( outputFolder + fileinfo.Name + "_" + itts + "12_reduced_128.jpg", jpgCodec, jpgQuality );
+                ImageFunctions.ReduceImageColors( gaussian, 2,   false, progressPrint ).Save( outputFolder + outputFilePrefix + fileinfo.Name + "_" + itts + "06_reduced_2.jpg",   jpgCodec, jpgQuality );
+                ImageFunctions.ReduceImageColors( gaussian, 4,   false, progressPrint ).Save( outputFolder + outputFilePrefix + fileinfo.Name + "_" + itts + "07_reduced_4.jpg",   jpgCodec, jpgQuality );
+                ImageFunctions.ReduceImageColors( gaussian, 8,   false, progressPrint ).Save( outputFolder + outputFilePrefix + fileinfo.Name + "_" + itts + "08_reduced_8.jpg",   jpgCodec, jpgQuality );
+                ImageFunctions.ReduceImageColors( gaussian, 16,  false, progressPrint ).Save( outputFolder + outputFilePrefix + fileinfo.Name + "_" + itts + "09_reduced_16.jpg",  jpgCodec, jpgQuality );
+                ImageFunctions.ReduceImageColors( gaussian, 32,  false, progressPrint ).Save( outputFolder + outputFilePrefix + fileinfo.Name + "_" + itts + "10_reduced_32.jpg",  jpgCodec, jpgQuality );
+                ImageFunctions.ReduceImageColors( gaussian, 64,  false, progressPrint ).Save( outputFolder + outputFilePrefix + fileinfo.Name + "_" + itts + "11_reduced_64.jpg",  jpgCodec, jpgQuality );
+                ImageFunctions.ReduceImageColors( gaussian, 128, false, progressPrint ).Save( outputFolder + outputFilePrefix + fileinfo.Name + "_" + itts + "12_reduced_128.jpg", jpgCodec, jpgQuality );
             }
 
             if( imageTypesToSave[itts++] || !true )
             {
                 Bitmap final = gaussian;
                 final = ImageFunctions.ImageKernal( final, ImageFunctions.EdgeFindKernal, false, progressPrint );
-                final.Save( outputFolder + fileinfo.Name + "_" + itts + "99_edge.jpg", jpgCodec, jpgQuality );
+                final.Save( outputFolder + outputFilePrefix + fileinfo.Name + "_" + itts + "99_edge.jpg", jpgCodec, jpgQuality );
             }
 
             perStopwatch.Stop();
