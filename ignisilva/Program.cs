@@ -41,7 +41,7 @@ namespace ignisilva
             }
 
             Random random = new Random();
-            
+
 
             DecisionForest forest = new DecisionForest( hogWindowSize * hogWindowSize * 9, 4 );
 
@@ -77,14 +77,23 @@ namespace ignisilva
 
             SampleDataSet trainingData = new SampleDataSet( hogWindowSize * hogWindowSize * 9, 4 );
 
-            foreach( FileInfo fileInfo in Files )
+            int imageDimention = maxImageDimension;
+            int minImageDimention = hogWindowSize * 8 * 4;
+            while( imageDimention >= minImageDimention )
             {
-                try
+                Console.WriteLine( "Extracting for max dimention {0}...", imageDimention );
+
+                foreach( FileInfo fileInfo in Files )
                 {
-                    Console.WriteLine( fileInfo );
-                    trainingData.AddData( ImageFeatureExtraction.ExtractHogDataFromTrainingImage( imageFolder + fileInfo.Name, trainingFolder + fileInfo.Name + trainingFileSuffix, hogWindowSize, maxImageDimension, 4 ) );
+                    try
+                    {
+                        Console.WriteLine( fileInfo );
+                        trainingData.AddData( ImageFeatureExtraction.ExtractHogDataFromTrainingImage( imageFolder + fileInfo.Name, trainingFolder + fileInfo.Name + trainingFileSuffix, hogWindowSize, imageDimention, 4 ) );
+                    }
+                    finally { }
                 }
-                finally { }
+
+                imageDimention = (int)((double)imageDimention * 0.9);
             }
 
 
@@ -95,9 +104,9 @@ namespace ignisilva
 
             bool adaptiveStrides = true;
 
-            Int32 numThreads = 2;
+            Int32 numThreads = 6;
             Int32 treeDepth = -16;
-            Int32 treesPerBlock = 10;
+            Int32 treesPerBlock = 24;
             Int32 numSamples = (int)Math.Sqrt( trainingData.NumSamples ) * 64;
 
             while( forest.NumTrees < 500 )
