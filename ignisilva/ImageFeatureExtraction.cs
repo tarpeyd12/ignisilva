@@ -12,7 +12,7 @@ namespace ignisilva
 {
     static class ImageFeatureExtraction
     {
-        public static void ExtractImageFeaturesFromDirectory( string folder, string outputFolder, string outputFilePrefix = "hog_", bool[] imageTypesToSave = null, int maxImageDimention = -1024 )
+        public static void ExtractImageFeaturesFromDirectory( string folder, string outputFolder, string outputFilePrefix = "hog_", bool[] imageTypesToSave = null, int maxImageDimention = -1024, int HOG_norm_size = 2 )
         {
             Stopwatch totalStopwatch = Stopwatch.StartNew();
 
@@ -23,7 +23,7 @@ namespace ignisilva
 
             //int maxImageDimention = -1024;
             int HOG_block_size = 8;
-            int HOG_norm_size = 2;
+            //int HOG_norm_size = 2;
 
             if( imageTypesToSave == null )
             {
@@ -104,9 +104,11 @@ namespace ignisilva
 
 
             Bitmap gaussian = image;
-            //gaussian = ImageProcessing.ImageKernal( gaussian, ImageProcessing.GaussianBlurKernal );
-            gaussian = ImageFunctions.ImageKernal( ImageFunctions.ImageKernal( gaussian, ImageFunctions.GaussianBlurXKernal, false, progressPrint ), ImageFunctions.GaussianBlurYKernal, false, progressPrint );
-            //gaussian = ImageProcessing.ImageKernal( ImageProcessing.ImageKernal( gaussian, ImageProcessing.GaussianBlurFastXKernal, false, progressPrint ), ImageProcessing.GaussianBlurFastYKernal, false, progressPrint );
+
+            //gaussian = ImageFunctions.ImageKernal( gaussian, ImageFunctions.GaussianBlurKernal );
+            //gaussian = ImageFunctions.ImageKernal( ImageFunctions.ImageKernal( gaussian, ImageFunctions.GaussianBlurXKernal, false, progressPrint ), ImageFunctions.GaussianBlurYKernal, false, progressPrint );
+            gaussian = ImageFunctions.ImageKernal( ImageFunctions.ImageKernal( gaussian, ImageFunctions.GaussianBlurFastXKernal, false, progressPrint ), ImageFunctions.GaussianBlurFastYKernal, false, progressPrint );
+
             if( imageTypesToSave[itts++] || !true )
             {
                 gaussian.Save( outputFolder + outputFilePrefix + fileinfo.Name + "_" + itts + "01_gaussian.jpg", jpgCodec, jpgQuality );
@@ -189,11 +191,11 @@ namespace ignisilva
             return ExtractHogDataFromTrainingImage( filename, 11 );
         }*/
 
-        public static SampleDataSet ExtractHogDataFromTrainingImage( string imageFilename, string trainingFilename, Int32 featureSize = 11, Int32 maxImageDimention = 1024, Int32 bytesPerPixelOutput = 3 )
+        public static SampleDataSet ExtractHogDataFromTrainingImage( string imageFilename, string trainingFilename, bool flipH = false, bool flipV = false, Int32 featureSize = 11, Int32 maxImageDimention = 1024, Int32 bytesPerPixelOutput = 3, int HOG_norm_size = 2 )
         {
             //const int maxImageDimention = -1024;
             const int HOG_block_size = 8;
-            const int HOG_norm_size = 2;
+            //const int HOG_norm_size = 2;
 
             SampleDataSet output = null;
             try
@@ -205,6 +207,17 @@ namespace ignisilva
                 Console.WriteLine( "Load The Images {0} {1}", inputFileInfo, trainingFileInfo );
                 Bitmap image = new Bitmap( Image.FromFile( inputFileInfo.FullName ) );
                 Bitmap trainingImage = new Bitmap( Image.FromFile( trainingFileInfo.FullName ) );
+
+                if( flipH )
+                {
+                    image.RotateFlip( RotateFlipType.RotateNoneFlipX );
+                    trainingImage.RotateFlip( RotateFlipType.RotateNoneFlipX );
+                }
+                if( flipV )
+                {
+                    image.RotateFlip( RotateFlipType.RotateNoneFlipY );
+                    trainingImage.RotateFlip( RotateFlipType.RotateNoneFlipY );
+                }
 
                 if( image.Size != trainingImage.Size )
                 {
@@ -231,7 +244,8 @@ namespace ignisilva
                 /* blur the image */
                 Console.WriteLine( "blur the image" );
                 Bitmap gaussian = image;
-                gaussian = ImageFunctions.ImageKernal( ImageFunctions.ImageKernal( gaussian, ImageFunctions.GaussianBlurXKernal, false, false ), ImageFunctions.GaussianBlurYKernal, false, false );
+                //gaussian = ImageFunctions.ImageKernal( ImageFunctions.ImageKernal( gaussian, ImageFunctions.GaussianBlurXKernal, false, false ), ImageFunctions.GaussianBlurYKernal, false, false );
+                gaussian = ImageFunctions.ImageKernal( ImageFunctions.ImageKernal( gaussian, ImageFunctions.GaussianBlurFastXKernal, false, false ), ImageFunctions.GaussianBlurFastYKernal, false, false );
 
                 /* Extract The HOG data from the Image */
                 Console.WriteLine( "Extract The HOG data from the Image");

@@ -37,7 +37,12 @@ namespace ignisilva
 
                 //_splitStride = (byte)(Int32)Math.Sqrt( _splitStride * _splitStride * _splitStride );
 
-                byte _splitStride = (byte)(Int32)(Math.Sqrt( Math.Pow( Math.Log(sampleData.NumSamples)/Math.Log(2.0), 3.0 ) ) );
+                byte _splitStride = (byte)(Int32)(Math.Sqrt( Math.Pow( Math.Log(sampleData.NumSamples)/Math.Log(2.0), 3.0 ) ) ); // stride estimation function
+
+                if( !adaptiveStrides )
+                {
+                    _splitStride = 1;
+                }
 
                 //_splitStride *= 4;
                 //_splitStride >>= currentDepth;
@@ -120,9 +125,13 @@ namespace ignisilva
             Int32 treesMade = 0;
             if( printDebug > 0 ) Console.Write( "{0,6:##0.00} %\r", (double)treesMade / (double)numTrees * 100.0 );
 
-            Parallel.For( 0, numTrees, new ParallelOptions { MaxDegreeOfParallelism = numThreads }, ( threadID)=> 
+            Parallel.For( 0, numTrees, new ParallelOptions { MaxDegreeOfParallelism = numThreads }, ( threadID )=> 
             {
-                SampleDataSet subSet = sampleData.RandomSubSet( subSampleSetSize, randomGenerators[threadID] );
+                SampleDataSet subSet = sampleData.RandomSubSet( subSampleSetSize, randomGenerators[threadID], randomGenerators[threadID].Next( 0, 100 ) < 66 ? true : false );
+                //SampleDataSet subSet = sampleData.RandomSubSet( subSampleSetSize, randomGenerators[threadID], true ); // we take samples from the less numerous outputs first, giving a more even sampling over the output types
+                //SampleDataSet subSet = sampleData.RandomSubSet( subSampleSetSize, randomGenerators[threadID], false ); // we take our random samples from the whole sample set evenly giving a proportional representation
+                //SampleDataSet subSet = sampleData.RandomSubSet( subSampleSetSize/2+ subSampleSetSize%2, randomGenerators[threadID], false ); // we take our random samples from the whole sample set evenly giving a proportional representation
+                //subSet.AddData( sampleData.RandomSubSet( subSampleSetSize/2, randomGenerators[threadID], true ) );
 
                 DecisionTree tree = Generate( subSet, randomGenerators[threadID], indexList, inputSignificanceList, maxDepth, adaptiveStrides, printDebug > 1 ? true : false );
 

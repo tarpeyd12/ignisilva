@@ -32,13 +32,15 @@ namespace ignisilva
         public XmlWriter WriteXml( XmlWriter xml, string fmt = "b64" )
         {
             xml.WriteStartElement( "sample" );
-            xml.WriteStartElement( "input" ); 
-            xml.WriteAttributeString( "format", fmt );
-            XmlHelper.WriteByteString( xml, Input, fmt );
+            xml.WriteStartElement( "input" );
+            string inputFormat = XmlHelper.RecommendBinaryEncodingFormat( fmt, Input );
+            xml.WriteAttributeString( "format", inputFormat );
+            XmlHelper.WriteByteString( xml, Input, inputFormat );
             xml.WriteEndElement();
             xml.WriteStartElement( "output" );
-            xml.WriteAttributeString( "format", fmt );
-            XmlHelper.WriteByteString( xml, Output, fmt );
+            string outputFormat = XmlHelper.RecommendBinaryEncodingFormat( fmt, Output );
+            xml.WriteAttributeString( "format", outputFormat );
+            XmlHelper.WriteByteString( xml, Output, outputFormat );
             xml.WriteEndElement();
             xml.WriteEndElement();
             return xml;

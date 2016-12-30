@@ -70,9 +70,14 @@ namespace ignisilva
             if( flatTree == null )
             {
                 flatTree = new DecisionNode[tree.Count];
-                foreach( KeyValuePair<int,DecisionNode> pair in tree.ToList() )
+                /*List<KeyValuePair<int, DecisionNode>> treeList = tree.ToList();
+                foreach( KeyValuePair<int,DecisionNode> pair in treeList )
                 {
                     flatTree[pair.Key] = pair.Value;
+                }*/
+                for( Int32 i = 0; i < flatTree.Length; ++i )
+                {
+                    flatTree[i] = tree[i];
                 }
             }
 
@@ -84,6 +89,12 @@ namespace ignisilva
             {
                 //node = tree[NextNodeID];
                 node = flatTree[NextNodeID];
+
+                // just in case, somehow this is sometimes needed :(
+                if( null == node )
+                {
+                    node = tree[NextNodeID];
+                }
             }
             while( ( NextNodeID = node.NextNodeByDecision( input ) ) >= 0 );
             

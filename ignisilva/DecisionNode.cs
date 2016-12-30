@@ -83,8 +83,9 @@ namespace ignisilva
             else
             {
                 xml.WriteAttributeString( "type", "leaf" );
-                xml.WriteAttributeString( "format", fmt );
-                XmlHelper.WriteByteString( xml, Output, fmt );
+                string outputFormat = XmlHelper.RecommendBinaryEncodingFormat( fmt, Output );
+                xml.WriteAttributeString( "format", outputFormat );
+                XmlHelper.WriteByteString( xml, Output, outputFormat );
             }
 
             xml.WriteEndElement();

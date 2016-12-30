@@ -52,12 +52,33 @@ namespace ignisilva
             return WriteByteStringBase64( xml, GZipByteArray( byteData ) );
         }
 
+        public static string RecommendBinaryEncodingFormat( string fmt, byte[] byteData )
+        {
+
+            if( fmt != "a64" && fmt != "auto" )
+            {
+                return fmt;
+            }
+
+            if( byteData.Length < 10 )
+            {
+                return "csv";
+            }
+            else if( byteData.Length > 100 )
+            {
+                return "z64";
+            }
+
+            return "b64";
+        }
+
         public static XmlWriter WriteByteString( XmlWriter xml, byte[] byteData, string fmt = "b64" )
         {
-            ;
-
             switch( fmt )
             {
+                case "auto":/*
+                case "a64":
+                    return WriteByteString( xml, byteData, RecommendBinaryEncodingFormat( fmt, byteData ) );*/
                 case "b64":
                     return WriteByteStringBase64( xml, byteData );
                 case "z64":

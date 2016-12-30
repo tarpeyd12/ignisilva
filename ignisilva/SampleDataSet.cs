@@ -51,6 +51,11 @@ namespace ignisilva
 
         public bool AddData( SampleData data, bool minMax = true )
         {
+            if( data == null )
+            {
+                throw new Exception( "ERROR SampleDataSet.AddData( data ); data == null." );
+            }
+
             if( data.NumInputs != NumInputs || data.NumOutputs != NumOutputs )
             {
                 return false;
@@ -109,15 +114,71 @@ namespace ignisilva
             return true;
         }
 
-        public SampleDataSet RandomSubSet( Int32 Num, Random random = null )
+        public SampleDataSet RandomSubSet( Int32 Num, Random random = null, bool evenSample = false )
         {
             SampleDataSet subSampleSet = new SampleDataSet( NumInputs, NumOutputs );
 
-            Int32[] indexes = Func.UniqueRandomNumberRange( Num, 0, NumSamples, random == null ? new Random() : random );
-
-            foreach( Int32 index in indexes )
+            if( random == null )
             {
-                subSampleSet.AddData( dataSet[index] );
+                random = new Random();
+            }
+
+            if( evenSample && NumUniqueOutputs != 1 )
+            {
+                List<Tuple<Int32, Int32>> realSampleCounts = new List<Tuple<Int32, Int32>>(); // Item1 = OutputID, Item2 = numSamples of the unique output
+
+                for( Int32 i = 0; i < NumUniqueOutputs; ++i )
+                {
+                    realSampleCounts.Add( Tuple.Create( i, GetNumSetsByUniqueOutput( i ) ) );
+                }
+
+                // sort by the number of samples for each output.
+                realSampleCounts.Sort( delegate ( Tuple<Int32, Int32> a, Tuple<Int32, Int32> b ) { return a.Item2.CompareTo( b.Item2 ); } );
+
+                Int32 totalSamples = Num;
+                //Int32 idealNumSamples = Num / NumUniqueOutputs;
+                Int32[] samplesPerOutput = new Int32[NumUniqueOutputs];
+
+                for( Int32 i = 0; i < realSampleCounts.Count; ++i )
+                {
+                    Int32 idealNumSamples = totalSamples / ( NumUniqueOutputs - i );
+                    if( realSampleCounts[i].Item2 <= idealNumSamples )
+                    {
+                        samplesPerOutput[realSampleCounts[i].Item1] = realSampleCounts[i].Item2;
+                    }
+                    else
+                    {
+                        samplesPerOutput[realSampleCounts[i].Item1] = idealNumSamples;
+                    }
+                    totalSamples -= samplesPerOutput[realSampleCounts[i].Item1];
+                }
+
+                if( totalSamples != 0 )
+                {
+                    throw new Exception( String.Format("ERROR SampleDataSet.RandomSubSet( {0}, {1}, {2} ); totalSamples != 0.", Num, random, evenSample) );
+                }
+
+                for( Int32 i = 0; i < samplesPerOutput.Length; ++i )
+                {
+                    //subSampleSet.AddData( SubSetByOutput( i ).RandomSubSet( samplesPerOutput[i], random, false ) );
+                    List<SampleData> uniqueSet = uniqueOutputSets[GetOutputHashCodeFromFlatOutputID( i )];
+                    Int32[] indexes = Func.UniqueRandomNumberRange( samplesPerOutput[i], 0, uniqueSet.Count, random );
+                    foreach( Int32 index in indexes )
+                    {
+                        subSampleSet.AddData( uniqueSet[index] );
+                    }
+                }
+
+                // **************************************************************************************
+            }
+            else
+            {
+                Int32[] indexes = Func.UniqueRandomNumberRange( Num, 0, NumSamples, random );
+
+                foreach( Int32 index in indexes )
+                {
+                    subSampleSet.AddData( dataSet[index] );
+                }
             }
 
             return subSampleSet;
