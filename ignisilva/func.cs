@@ -76,7 +76,7 @@ namespace ignisilva
             output[2] = (byte)Func.Clamp( input / Int32.MaxValue / 256 / 256 / 256,       0, 255 );
             output[3] = (byte)Func.Clamp( input / Int32.MaxValue / 256 / 256 / 256 / 256, 0, 255 );
 
-            Console.WriteLine( "IntToBytes({0}) = {1}", input, ToCSV(output) );*/
+            //Console.WriteLine( "IntToBytes({0}) = {1}", input, ToCSV(output) );*/
 
             return direct;
         }
@@ -118,6 +118,27 @@ namespace ignisilva
             return output;
         }
 
+
+        public static double[] NormalizeDoubleArray( double[] array )
+        {
+            double len = 0.0;
+
+            foreach( double v in array )
+            {
+                len += v * v;
+            }
+
+            len = Math.Sqrt( len );
+
+            double[] output = new double[array.Length];
+
+            for( UInt32 i = 0; i < output.Length; ++i )
+            {
+                output[i] = array[i] / len;
+            }
+
+            return output;
+        }
 
     }
 }
