@@ -157,7 +157,8 @@ namespace ignisilva
 
                 Bitmap hogOutput = Hog.BinGradientsToBitmap( binGradients, hogBinSize, darkenedBackdropImage );
 
-                hogOutput = ImageFunctions.AddImages( hogOutput, ImageFunctions.ImageKernal( backdropImage, new float[,] { { 1.0f/2.0f } } ) );
+                //hogOutput = ImageFunctions.AddImages( hogOutput, ImageFunctions.ImageKernal( backdropImage, new float[,] { { 1.0f/2.0f } } ) );
+                hogOutput = ImageFunctions.AddImages( hogOutput, darkenedBackdropImage );
 
                 hogOutput.Save( outputFolder + outputFilePrefix + fileinfo.Name + "_" + itts + "04_hogV.png" );
             }
@@ -191,7 +192,7 @@ namespace ignisilva
             return ExtractHogDataFromTrainingImage( filename, 11 );
         }*/
 
-        public static SampleDataSet ExtractHogDataFromTrainingImage( string imageFilename, string trainingFilename, bool flipH = false, bool flipV = false, Int32 featureSize = 11, Int32 maxImageDimention = 1024, Int32 bytesPerPixelOutput = 3, int HOG_norm_size = 2 )
+        public static SampleDataSet ExtractHogDataFromTrainingImage( string imageFilename, string trainingFilename, ColorStore colorTable, bool flipH = false, bool flipV = false, Int32 featureSize = 11, Int32 maxImageDimention = 1024, Int32 bytesPerPixelOutput = 3, int HOG_norm_size = 2, bool verbose = false )
         {
             //const int maxImageDimention = -1024;
             const int HOG_block_size = 8;
@@ -204,20 +205,9 @@ namespace ignisilva
                 FileInfo trainingFileInfo = new FileInfo( trainingFilename );
 
                 /* Load The Images */
-                Console.WriteLine( "Load The Images {0} {1}", inputFileInfo, trainingFileInfo );
+                if( verbose ) Console.WriteLine( "Load The Images {0} {1}", inputFileInfo, trainingFileInfo );
                 Bitmap image = new Bitmap( Image.FromFile( inputFileInfo.FullName ) );
                 Bitmap trainingImage = new Bitmap( Image.FromFile( trainingFileInfo.FullName ) );
-
-                if( flipH )
-                {
-                    image.RotateFlip( RotateFlipType.RotateNoneFlipX );
-                    trainingImage.RotateFlip( RotateFlipType.RotateNoneFlipX );
-                }
-                if( flipV )
-                {
-                    image.RotateFlip( RotateFlipType.RotateNoneFlipY );
-                    trainingImage.RotateFlip( RotateFlipType.RotateNoneFlipY );
-                }
 
                 if( image.Size != trainingImage.Size )
                 {
@@ -227,7 +217,7 @@ namespace ignisilva
                 double scale = Math.Min( (double)maxImageDimention / image.Width, (double)maxImageDimention / image.Height );
 
                 /* Scale the Image */
-                Console.WriteLine( "Scale the Image {0}", scale );
+                if( verbose ) Console.WriteLine( "Scale the Image {0}", scale );
                 if( maxImageDimention > 0 && scale < 1.0 && scale > 0.0 )
                 {
                     //trainingImage = new Bitmap( trainingImage,  (int)(trainingImage.Width * scale ), (int)( trainingImage.Height * scale )  );
@@ -241,14 +231,26 @@ namespace ignisilva
                     //GC.Collect();
                 }
 
+                /* Flip the Images */
+                if( flipH )
+                {
+                    image.RotateFlip( RotateFlipType.RotateNoneFlipX );
+                    trainingImage.RotateFlip( RotateFlipType.RotateNoneFlipX );
+                }
+                if( flipV )
+                {
+                    image.RotateFlip( RotateFlipType.RotateNoneFlipY );
+                    trainingImage.RotateFlip( RotateFlipType.RotateNoneFlipY );
+                }
+
                 /* blur the image */
-                Console.WriteLine( "blur the image" );
+                if( verbose ) Console.WriteLine( "blur the image" );
                 Bitmap gaussian = image;
                 //gaussian = ImageFunctions.ImageKernal( ImageFunctions.ImageKernal( gaussian, ImageFunctions.GaussianBlurXKernal, false, false ), ImageFunctions.GaussianBlurYKernal, false, false );
                 gaussian = ImageFunctions.ImageKernal( ImageFunctions.ImageKernal( gaussian, ImageFunctions.GaussianBlurFastXKernal, false, false ), ImageFunctions.GaussianBlurFastYKernal, false, false );
 
                 /* Extract The HOG data from the Image */
-                Console.WriteLine( "Extract The HOG data from the Image");
+                if( verbose ) Console.WriteLine( "Extract The HOG data from the Image");
                 Bitmap hogInput = gaussian;
 
                 Size hogBinSize = new Size( HOG_block_size, HOG_block_size );
@@ -262,8 +264,8 @@ namespace ignisilva
                 Int32 trainingImageColorDepth = ImageFunctions.BytesPerPixelIn( trainingImage );
 
                 /* Extract the SampleData from the HOG */
-                Console.WriteLine( "Extract the SampleData from the HOG" );
-                output = new SampleDataSet( featureSize * featureSize * binGradients.GetLength( 2 ), trainingImageColorDepth );
+                if( verbose ) Console.WriteLine( "Extract the SampleData from the HOG" );
+                output = new SampleDataSet( featureSize * featureSize * binGradients.GetLength( 2 ), colorTable.HistogramLength/*trainingImageColorDepth*/ );
 
                 for( Int32 y = 0; y < binGradients.GetLength( 1 ); ++y )
                 {
@@ -274,7 +276,10 @@ namespace ignisilva
 
                         byte[] sampleOutput = Func.TruncateByteSequence( ImageFunctions.GetRawPixelFromImageData( trainingImageData, (Int32)cX, (Int32)cY, trainingImage.Size.Width, trainingImageColorDepth ), bytesPerPixelOutput );
                         byte[] sampleInput = GetBytesInBoxFromHog( binGradients, x, y, featureSize );
-                        
+
+                        byte[] histogram = colorTable.ColorToHistogram( sampleOutput );
+                        sampleOutput = histogram;
+
                         output.AddData( new SampleData( sampleInput, sampleOutput ) );
                     }
                 }

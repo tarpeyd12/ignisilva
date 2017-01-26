@@ -80,6 +80,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ColorStore.cs" />
     <Compile Include="HashTableHashing.cs" />
     <Compile Include="DecisionForest.cs" />
     <Compile Include="DecisionNode.cs" />

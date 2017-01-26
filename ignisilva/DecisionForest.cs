@@ -54,7 +54,7 @@ namespace ignisilva
                 return null;
             }
 
-            Int32[] sums = new Int32[ NumOutputs ];
+            UInt32[] sums = new UInt32[ NumOutputs ];
 
             foreach( DecisionTree tree in forest )
             {
@@ -65,7 +65,7 @@ namespace ignisilva
                     continue;
                 }
 
-                for( Int32 i = 0; i < NumOutputs; ++i )
+                for( UInt32 i = 0; i < NumOutputs; ++i )
                 {
                     sums[i] += result[i];
                 }
@@ -73,7 +73,7 @@ namespace ignisilva
 
             byte[] output = new byte[NumOutputs];
 
-            for( Int32 i = 0; i < NumOutputs; ++i )
+            for( UInt32 i = 0; i < NumOutputs; ++i )
             {
                 output[i] = (byte)Func.Clamp( ((double)sums[i] / (double)forest.Count), 0.0f, 255.0f );
             }
@@ -208,6 +208,69 @@ namespace ignisilva
             listCounts.Sort( delegate ( _OutputCounter c1, _OutputCounter c2 ) { return c2.count.CompareTo( c1.count ); } );
 
             return listCounts[0].output;
+        }
+
+        private List<UInt32> _DecideVH( byte[] input )
+        {
+            if( forest.Count == 0 )
+            {
+                Console.Write( "NO TREES IN FOREST ..." );
+                return null;
+            }
+
+            UInt64[] sums = new UInt64[NumOutputs];
+
+            foreach( DecisionTree tree in forest )
+            {
+                byte[] result = tree.Decide( input );
+
+                if( result == null )
+                {
+                    continue;
+                }
+
+                for( UInt32 i = 0; i < sums.Length; ++i )
+                {
+                    sums[i] += result[i];
+                }
+            }
+
+            UInt32 maxIndex = 0;
+            List<UInt32> maxIndexes = new List<UInt32>();
+
+            for( UInt32 i = 0; i < sums.Length; ++i )
+            {
+                if( sums[i] == sums[maxIndex] )
+                {
+                    maxIndexes.Add( i );
+                }
+                if( sums[i] > sums[maxIndex] )
+                {
+                    maxIndex = i;
+                    maxIndexes.Clear();
+                    maxIndexes.Add( i );
+                }
+            }
+
+            return maxIndexes;
+        }
+
+        public byte[] DecideVH( byte[] input, Random random )
+        {
+            List<UInt32> maxIndexes = _DecideVH( input );
+
+            byte[] output = new byte[NumOutputs];
+
+            if( random == null || maxIndexes.Count == 1 )
+            {
+                output[maxIndexes[0]] = 255;
+            }
+            else
+            {
+                output[maxIndexes[random.Next(maxIndexes.Count)]] = 255;
+            }
+
+            return output;
         }
 
         public XmlWriter WriteXml( XmlWriter xml, string fmt = "b64" )

@@ -9,24 +9,39 @@ namespace ignisilva
 {
     class ColorStore : IXmlWritable
     {
-        private UInt32 _maxNumColors;
-        private UInt32 _colorlength;
+        private Int32 _maxNumColors;
+        private Int32 _colorlength;
+
+        private object _sync;
 
         private Dictionary<UInt32, Tuple<Int32, byte[]>> hashToColor;
         private Dictionary<Int32, byte[]> idToColor;
 
         private HashTableHashing.IHashAlgorithm _hasher;
 
-        public UInt32 MaxNumColors { get { return _maxNumColors; } }
-        public UInt32 HistogramLength { get { return _maxNumColors; } }
+        public Int32 MaxNumColors { get { return _maxNumColors; } }
+        public Int32 HistogramLength { get { return _maxNumColors; } }
         public Int32 NumColors { get { return hashToColor.Count; } }
-        public UInt32 ColorLength { get { return _colorlength; } }
+        public Int32 ColorLength { get { return _colorlength; } }
 
 
-        ColorStore( UInt32 cololength, UInt32 maxnumcolors)
+        public ColorStore( Int32 cololength, Int32 maxnumcolors)
         {
+            _sync = new object();
+
             _maxNumColors = maxnumcolors;
+            if( _maxNumColors <= 0 )
+            {
+                _maxNumColors = 1;
+            }
             _colorlength = cololength;
+            if( _colorlength <= 0 )
+            {
+                _colorlength = 1;
+            }
+
+            hashToColor = new Dictionary<UInt32, Tuple<Int32, byte[]>>();
+
             _hasher = new HashTableHashing.MurmurHash2Simple();
         }
 
@@ -37,21 +52,27 @@ namespace ignisilva
             // if the color is not in the database
             if( !hashToColor.ContainsKey( hash ) )
             {
-                if( NumColors >= MaxNumColors )
+                lock( _sync )
                 {
-                    return null;
-                }
+                    if( NumColors >= MaxNumColors )
+                    {
+                        return null;
+                    }
+                    
+                    idToColor = null;
 
-                // add it
-                hashToColor.Add( hash, Tuple.Create( NumColors, color ) );
+                    // add it
+                    hashToColor.Add( hash, Tuple.Create( NumColors, color ) );
+                }
+                
             }
 
             byte[] histogram = new byte[HistogramLength];
 
-            for( UInt32 i = 0; i < histogram.Length; ++i )
+            /*for( UInt32 i = 0; i < histogram.Length; ++i )
             {
                 histogram[i] = 0;
-            }
+            }*/
 
             // set the index of the color in the histogram to max value
             histogram[hashToColor[hash].Item1] = 255;
@@ -69,20 +90,24 @@ namespace ignisilva
 
             if( null == idToColor )
             {
-                idToColor = new Dictionary<Int32, byte[]>();
-
-                foreach( KeyValuePair<UInt32, Tuple<Int32, byte[]>> hc in hashToColor )
+                lock( _sync )
                 {
-                    idToColor.Add( hc.Value.Item1, hc.Value.Item2 );
+                    idToColor = new Dictionary<Int32, byte[]>();
+
+                    foreach( KeyValuePair<UInt32, Tuple<Int32, byte[]>> hc in hashToColor )
+                    {
+                        idToColor.Add( hc.Value.Item1, hc.Value.Item2 );
+                    }
                 }
             }
             
             double[] floatColor = new double[ColorLength];
+            double total = 0.0;
 
-            for( Int32 index = 0; index < HistogramLength; ++index )
+            for( Int32 index = 0; index < NumColors; ++index )
             {
                 double value = (double)histogram[index] / 255.0;
-
+                total += value;
                 byte[] colorAtIndex = idToColor[index];
 
                 for( UInt32 i = 0; i < ColorLength; ++i )
@@ -91,13 +116,14 @@ namespace ignisilva
                 }
             }
 
-            floatColor = Func.NormalizeDoubleArray( floatColor );
+            //floatColor = Func.NormalizeDoubleArray( floatColor );
 
+            double numColors = (double)NumColors;
             byte[] color = new byte[ColorLength];
 
             for( UInt32 i = 0; i < color.Length; ++i )
             {
-                color[i] = (byte)( Func.Clamp( floatColor[i] * 255.0, 0.0, 255.0 ) );
+                color[i] = (byte)( Func.Clamp( floatColor[i] / total * 255.0, 0.0, 255.0 ) );
             }
             
             return color;
