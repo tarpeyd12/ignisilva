@@ -455,13 +455,17 @@ namespace ignisilva
         // todo Figure out how to have this function retrun SampleDataSet[] with the set presplit so that we dont have to do that again.
         public bool GetBestSplit( out Int32 splitIndex, out byte splitValue, Random random = null, Int32[] inputIndexes = null, Int32[] inputSignificance = null, byte splitCheckStride = 1 )
         {
+            // input sanity check
             if( NumUniqueOutputs <= 1 || ( inputSignificance != null && ( inputSignificance.Length != NumInputs ) ) )
             {
                 splitIndex = -1;
                 splitValue = 0;
+
+                // failure!
                 return false;
             }
 
+            // create our own random generator if none given
             if( random == null )
             {
                 random = new Random();
@@ -471,41 +475,142 @@ namespace ignisilva
 
             List< _SplitIGContainer > splits = new List< _SplitIGContainer >();
 
+            // use all indexes of the inputs for checking if none are spescifiyed ( may cause unnessisary memory duplication in multithreading )
             if( inputIndexes == null )
             {
                 inputIndexes = Enumerable.Range( 0, NumInputs ).ToArray();
             }
 
+            // for each input index 
             foreach( Int32 i in inputIndexes )
             {
+                // for each value in the range in the current index i in the sample set
                 for( int v = inputMinMax[i, 0]; v <= inputMinMax[i, 1]; v += splitCheckStride )
                 {
+                    // get the information gain of the split on index i at value v
                     float ig = GetInformationGainOfSplit( i, (byte)v );
                     splits.Add( new _SplitIGContainer( i, (byte)v, ig, inputSignificance == null ? -5 : inputSignificance[i] ) );
                 }
             }
 
-            List<_SplitIGContainer> bestSplits = splits;
-            
-            bestSplits.Sort( delegate ( _SplitIGContainer s1, _SplitIGContainer s2 ) { return s2.infoGain.CompareTo( s1.infoGain ); } );
-            bestSplits = bestSplits.FindAll( delegate( _SplitIGContainer s ) { return s.infoGain == bestSplits[0].infoGain; } );
 
-            if( inputSignificance != null )
+
+            // alais splits to bestSplits
+            List<_SplitIGContainer> bestSplits = splits; // TODO: not necessary
+
+            // remove the lowest valued splits
+            bestSplits.Sort( delegate ( _SplitIGContainer s1, _SplitIGContainer s2 ) { return s2.infoGain.CompareTo( s1.infoGain ); } );
+            bestSplits = bestSplits.FindAll( delegate( _SplitIGContainer s ) { return s.infoGain >= bestSplits[0].infoGain; } );
+
+            // if there are multiple bestSplits (ie. they have identical information gain) and they have an order of significance spescifiyed
+            if( inputSignificance != null && bestSplits.Count() > 1 )
             {
+                // sort by significance
                 bestSplits.Sort( delegate ( _SplitIGContainer s1, _SplitIGContainer s2 ) { return s2.byteSignificance.CompareTo( s1.byteSignificance ); } );
+                // only take the higher significance splits
                 bestSplits = bestSplits.FindAll( delegate ( _SplitIGContainer s ) { return s.byteSignificance == bestSplits[0].byteSignificance; } );
             }
 
+            // of the remaining bestSplits randomly choose one
             _SplitIGContainer bestSplit = bestSplits[random != null ? random.Next( bestSplits.Count ) : 0];
             
+            // assign our outputs
             splitIndex = bestSplit.splitIndex;
             splitValue = bestSplit.splitValue;
 
+            // success!
             return true;
         }
 
 
-        public XmlWriter WriteXml( XmlWriter xml, string fmt = "b64" )
+        // todo Figure out how to have this function retrun SampleDataSet[] with the set presplit so that we dont have to do that again.
+        public bool GetRandomBestSplit( out Int32 splitIndex, out byte splitValue, Int32 numTests = 1024, Random random = null, Int32[] inputIndexes = null, Int32[] inputSignificance = null, byte splitCheckStride = 1 )
+        {
+            // input sanity check
+            if( NumUniqueOutputs <= 1 || ( inputSignificance != null && ( inputSignificance.Length != NumInputs ) ) )
+            {
+                splitIndex = -1;
+                splitValue = 0;
+
+                // failure!
+                return false;
+            }
+
+            // create our own random generator if none given
+            if( random == null )
+            {
+                random = new Random();
+            }
+
+            // TODO: use inline functions/delegete to reduce code duplication here.
+
+            List<_SplitIGContainer> splits = new List<_SplitIGContainer>();
+
+            // use all indexes of the inputs for checking if none are spescifiyed ( may cause unnessisary memory duplication in multithreading )
+            if( inputIndexes == null )
+            {
+                inputIndexes = Enumerable.Range( 0, NumInputs ).ToArray();
+            }
+
+            List<Tuple<int, int>> toConsider = new List<Tuple<int, int>>();
+
+            // for each input index 
+            foreach( Int32 i in inputIndexes )
+            {
+                // for each value in the range in the current index i in the sample set
+                for( int v = inputMinMax[i, 0]; v <= inputMinMax[i, 1]; ++v )
+                {
+                    toConsider.Add( Tuple.Create( i, v ) );
+                }
+            }
+
+            // cannot be negativ or less than one, 
+            if( numTests <= 1 )
+            {
+                numTests = Func.Clamp( (int)Math.Sqrt( toConsider.Count() ) + 1, 2, toConsider.Count()/2 + 1 );
+            }
+
+            int[] willConsider = Func.UniqueRandomNumberRange( numTests, 0, toConsider.Count(), random );
+            
+            foreach( Tuple<int, int> t in toConsider )
+            {
+                int i = t.Item1;
+                int v = t.Item2;
+
+                // get the information gain of the split on index i at value v
+                float ig = GetInformationGainOfSplit( i, (byte)v );
+                splits.Add( new _SplitIGContainer( i, (byte)v, ig, inputSignificance == null ? -5 : inputSignificance[i] ) );
+            }
+
+            // alais splits to bestSplits
+            List<_SplitIGContainer> bestSplits = splits; // TODO: not necessary
+
+            // remove the lowest valued splits
+            bestSplits.Sort( delegate ( _SplitIGContainer s1, _SplitIGContainer s2 ) { return s2.infoGain.CompareTo( s1.infoGain ); } );
+            bestSplits = bestSplits.FindAll( delegate ( _SplitIGContainer s ) { return s.infoGain >= bestSplits[0].infoGain; } );
+
+            // if there are multiple bestSplits (ie. they have identical information gain) and they have an order of significance spescifiyed
+            if( inputSignificance != null && bestSplits.Count() > 1 )
+            {
+                // sort by significance
+                bestSplits.Sort( delegate ( _SplitIGContainer s1, _SplitIGContainer s2 ) { return s2.byteSignificance.CompareTo( s1.byteSignificance ); } );
+                // only take the higher significance splits
+                bestSplits = bestSplits.FindAll( delegate ( _SplitIGContainer s ) { return s.byteSignificance == bestSplits[0].byteSignificance; } );
+            }
+
+            // of the remaining bestSplits randomly choose one
+            _SplitIGContainer bestSplit = bestSplits[random != null ? random.Next( bestSplits.Count ) : 0];
+
+            // assign our outputs
+            splitIndex = bestSplit.splitIndex;
+            splitValue = bestSplit.splitValue;
+
+            // success!
+            return true;
+        }
+
+
+        public XmlWriter WriteXml( XmlWriter xml, string fmt = "b64" ) // TODO: should the default xml encoding be z64? (since this class usually has lots of data)
         {
             xml.WriteStartElement( "sample_set" );
             xml.WriteAttributeString( "num", NumSamples.ToString() );

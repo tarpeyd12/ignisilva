@@ -25,7 +25,7 @@ namespace ignisilva
             {
                 byte[] _output = sampleData.GetAverageOutput();
 
-                if( debug ) Console.WriteLine( "New Leaf Node [{0},[{1}]]", nodes.Count, Func.ToCSV( _output ) );
+                if( debug ) Console.WriteLine( "New Leaf Node [{0},[{1}]]", nodes.Count, _output.Length <= 16 ? Func.ToCSV( _output ) : "" );
                 nodes.Add( new DecisionNode( nodes.Count, _output ) );
             }
             else
@@ -49,8 +49,16 @@ namespace ignisilva
                 _splitStride = (byte)Func.Clamp( _splitStride, 1, 128 );
                 //_splitStride = 1;
 
-                if( debug ) Console.WriteLine( "Splitting {0} Samples to {1} Unique Outputs by {2}/256.... ", sampleData.NumSamples, sampleData.NumUniqueOutputs, _splitStride );
-                sampleData.GetBestSplit( out _splitIndex, out _splitValue, random, indexList, inputSignificanceList, _splitStride );
+                if( false )
+                {
+                    if( debug ) Console.WriteLine( "Splitting {0} Samples to {1} Unique Outputs by {2}/256.... ", sampleData.NumSamples, sampleData.NumUniqueOutputs, _splitStride );
+                    sampleData.GetBestSplit( out _splitIndex, out _splitValue, random, indexList, inputSignificanceList, _splitStride );
+                }
+                else
+                {
+                    if( debug ) Console.WriteLine( "Splitting {0} Samples to {1} Unique Outputs with {2} random split tests.... ", sampleData.NumSamples, sampleData.NumUniqueOutputs, 1024 );
+                    sampleData.GetRandomBestSplit( out _splitIndex, out _splitValue, 1024, random, indexList, inputSignificanceList, _splitStride );
+                }
 
                 SampleDataSet[] splitSets = sampleData.SplitSet( _splitIndex, _splitValue );
 
@@ -127,7 +135,7 @@ namespace ignisilva
 
             Parallel.For( 0, numTrees, new ParallelOptions { MaxDegreeOfParallelism = numThreads }, ( threadID )=> 
             {
-                SampleDataSet subSet = sampleData.RandomSubSet( subSampleSetSize, randomGenerators[threadID], randomGenerators[threadID].Next( 0, 100 ) < 66 ? true : false );
+                SampleDataSet subSet = sampleData.RandomSubSet( subSampleSetSize, randomGenerators[threadID], randomGenerators[threadID].Next( 0, 100 ) < 50 ? true : false );
                 //SampleDataSet subSet = sampleData.RandomSubSet( subSampleSetSize, randomGenerators[threadID], true ); // we take samples from the less numerous outputs first, giving a more even sampling over the output types
                 //SampleDataSet subSet = sampleData.RandomSubSet( subSampleSetSize, randomGenerators[threadID], false ); // we take our random samples from the whole sample set evenly giving a proportional representation
                 //SampleDataSet subSet = sampleData.RandomSubSet( subSampleSetSize/2+ subSampleSetSize%2, randomGenerators[threadID], false ); // we take our random samples from the whole sample set evenly giving a proportional representation
