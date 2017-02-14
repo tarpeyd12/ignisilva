@@ -49,7 +49,7 @@ namespace ignisilva
                 _splitStride = (byte)Func.Clamp( _splitStride, 1, 128 );
                 //_splitStride = 1;
 
-                if( false )
+                if( false ) // TODO: add proper option for this if statment
                 {
                     if( debug ) Console.WriteLine( "Splitting {0} Samples to {1} Unique Outputs by {2}/256.... ", sampleData.NumSamples, sampleData.NumUniqueOutputs, _splitStride );
                     sampleData.GetBestSplit( out _splitIndex, out _splitValue, random, indexList, inputSignificanceList, _splitStride );
