@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -120,6 +121,9 @@ namespace ignisilva
 
         public static DecisionTree[] GenerateForest( Int32 numTrees, SampleDataSet sampleData, Int32 subSampleSetSize, Int32 numThreads = 1, Random random = null, Int32[] indexList = null, Int32[] inputSignificanceList = null, Int32 maxDepth = -1, bool adaptiveStrides = true, int printDebug = 0 )
         {
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+
             DecisionTree[] trees = new DecisionTree[numTrees];
             Random[] randomGenerators = new Random[numTrees];
 
@@ -147,11 +151,13 @@ namespace ignisilva
                 {
                     trees[threadID] = tree;
                     ++treesMade;
-                    if( printDebug > 0 ) Console.Write( "{0,6:##0.00} %\r", (double)treesMade / (double)numTrees * 100.0 );
+                    if( printDebug > 0 ) Console.Write( "{0,6:##0.00} % {1}/{2} (avg {3,7:###0.00}s per tree) \r", (double)treesMade / (double)numTrees * 100.0, treesMade, numTrees, ( (double)stopwatch.ElapsedMilliseconds / 1000.0 ) / (double)treesMade );
                 }
                 
             } 
             );
+
+            stopwatch.Stop();
 
             return trees;
         }

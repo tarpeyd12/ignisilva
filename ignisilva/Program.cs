@@ -204,9 +204,14 @@ namespace ignisilva
 
             while( forest.NumTrees < totalTrees )
             {
+                Stopwatch treeBlockStopwatch = new Stopwatch();
+                treeBlockStopwatch.Start();
+
                 Console.WriteLine( "Generating {0} trees for {1} samples ...", treesPerBlock, numSamples );
                 forest.AddTrees( TreeGenerator.GenerateForest( treesPerBlock, trainingData, numSamples, numThreads, random, null, null, treeDepth, adaptiveStrides, numThreads == 1 ? 2 : 1 ) );
-                
+
+                treeBlockStopwatch.Stop();
+
                 {
                     //Parallel.Invoke(
                     //() =>
@@ -232,7 +237,8 @@ namespace ignisilva
                     }
                     //);
                 }
-                Console.WriteLine( "Tree block completed. Program runtime: {0} seconds.", (double)stopwatch.ElapsedMilliseconds / 1000.0 );
+                
+                Console.WriteLine( "Tree block completed. Time for block of {1} trees: {0} s. {2} s per tree Program runtime: {3} seconds.", (double)treeBlockStopwatch.ElapsedMilliseconds/1000.0, treesPerBlock, ((double)treeBlockStopwatch.ElapsedMilliseconds / 1000.0)/ (double)treesPerBlock, ( double)stopwatch.ElapsedMilliseconds / 1000.0 );
             }
 
             GC.Collect();
